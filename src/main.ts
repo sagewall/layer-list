@@ -1,12 +1,16 @@
-import "./style.css";
 import Map from "@arcgis/core/Map";
+import type Collection from "@arcgis/core/core/Collection";
+import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
+import GroupLayer from "@arcgis/core/layers/GroupLayer";
+import type Layer from "@arcgis/core/layers/Layer";
 import MapView from "@arcgis/core/views/MapView";
 import LayerList from "@arcgis/core/widgets/LayerList";
 import { defineCustomElements } from "@esri/calcite-components/dist/loader";
+import "./style.css";
 
 defineCustomElements(window, {
-  resourcesUrl: "https://js.arcgis.com/calcite-components/2.1.0/assets",
+  resourcesUrl: "https://js.arcgis.com/calcite-components/2.2.0/assets",
 });
 
 const layerUrls = [
@@ -24,7 +28,12 @@ const layers = layerUrls.map((url) => {
 
 const map = new Map({
   basemap: "topo-vector",
-  layers,
+});
+
+layers.forEach((layer, index) => {
+  setTimeout(() => {
+    map.add(layer);
+  }, index * 5000);
 });
 
 const view = new MapView({
@@ -35,7 +44,6 @@ const view = new MapView({
 });
 
 const layerList = new LayerList({
-  dragEnabled: true,
   filterPlaceholder: "Filter layers",
   listItemCreatedFunction: (event) => {
     const { item } = event;
@@ -43,16 +51,49 @@ const layerList = new LayerList({
       content: "legend",
       flowEnabled: true,
     };
+
+    item.actionsSections = [
+      [
+        {
+          title: "Create group layer",
+          icon: "folder-new",
+          id: "add-group-layer",
+        },
+      ],
+    ];
   },
   selectionMode: "multiple",
   view,
-  visibilityAppearance: "checkbox",
   visibleElements: {
-    filter: true,
     heading: true,
     closeButton: true,
     collapseButton: true,
   },
+});
+
+layerList.on("trigger-action", (event) => {
+  const { id } = event.action;
+  const { layer } = event.item;
+
+  const addGroupLayer = (
+    parent: Map | GroupLayer,
+    layers: Collection<Layer>
+  ) => {
+    const groupLayer = new GroupLayer({
+      title: "New group layer",
+    });
+    const layerIndex = layers.findIndex((mapLayer) => layer === mapLayer);
+    parent.add(groupLayer, layerIndex + 1);
+    groupLayer.add(layer);
+  };
+
+  if (id === "add-group-layer") {
+    if (layer.parent instanceof GroupLayer) {
+      addGroupLayer(layer.parent, layer.parent.layers);
+    } else if (layer.parent instanceof Map) {
+      addGroupLayer(layer.parent, map.layers);
+    }
+  }
 });
 
 view.ui.add("switch-panel", "top-right");
@@ -67,4 +108,16 @@ visibilityAppearanceSwitch.addEventListener("calciteSwitchChange", (event) => {
   target.checked
     ? (layerList.visibilityAppearance = "checkbox")
     : (layerList.visibilityAppearance = "default");
+});
+
+view.when(() => {
+  reactiveUtils.watch(
+    () => view.map.layers.length,
+    (length) => {
+      layerList.dragEnabled = length > 1;
+      layerList.visibleElements.filter = length > 3;
+    }
+  );
+
+  view.ui.add(layerList, "top-right");
 });
