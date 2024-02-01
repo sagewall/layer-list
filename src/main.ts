@@ -33,7 +33,7 @@ const map = new Map({
 layers.forEach((layer, index) => {
   setTimeout(() => {
     map.add(layer);
-  }, index * 5000);
+  }, index * 3000);
 });
 
 const view = new MapView({
@@ -119,5 +119,32 @@ view.when(() => {
     }
   );
 
-  view.ui.add(layerList, "top-right");
+  layerList.selectedItems.on("change", (event) => {
+    const { removed, added } = event;
+    removed.forEach((item) => {
+      const { layer } = item;
+      if (layer instanceof FeatureLayer) {
+        layer.effect = "none";
+      }
+    });
+    added.forEach((item) => {
+      const { layer } = item;
+      if (layer instanceof FeatureLayer) {
+        layer.effect = [
+          {
+            scale: 36978595,
+            value: "drop-shadow(3px, 3px, 4px)",
+          },
+          {
+            scale: 18489297,
+            value: "drop-shadow(2px, 2px, 3px)",
+          },
+          {
+            scale: 4622324,
+            value: "drop-shadow(1px, 1px, 2px)",
+          },
+        ];
+      }
+    });
+  });
 });
