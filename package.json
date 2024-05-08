@@ -13,7 +13,7 @@
     "vite": "^5.0.12"
   },
   "dependencies": {
-    "@arcgis/core": "^4.29.0-next.20240201",
-    "@esri/calcite-components": "^2.2.0"
+    "@arcgis/core": "^4.30.0-next.20240508",
+    "@esri/calcite-components": "^2.7.1"
   }
 }

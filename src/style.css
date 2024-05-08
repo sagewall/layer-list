@@ -1,4 +1,4 @@
-@import "@arcgis/core/assets/esri/themes/dark/main.css";
+@import "@arcgis/core/assets/esri/themes/light/main.css";
 @import "@esri/calcite-components/dist/calcite/calcite.css";
 
 html,
@@ -9,11 +9,7 @@ body,
   height: 100%;
   width: 100%;
 }
+
 calcite-label {
   padding: 10px;
 }
-
-/* .esri-layer-list__visible-toggle {
-  --calcite-color-text-1: #007ac2;
-  --calcite-color-text-3: #007ac2;
-} */

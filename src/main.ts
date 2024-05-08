@@ -1,8 +1,8 @@
 import Map from "@arcgis/core/Map";
 import type Collection from "@arcgis/core/core/Collection";
-import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer";
+import KnowledgeGraphLayer from "@arcgis/core/layers/KnowledgeGraphLayer";
 import type Layer from "@arcgis/core/layers/Layer";
 import MapView from "@arcgis/core/views/MapView";
 import LayerList from "@arcgis/core/widgets/LayerList";
@@ -10,30 +10,38 @@ import { defineCustomElements } from "@esri/calcite-components/dist/loader";
 import "./style.css";
 
 defineCustomElements(window, {
-  resourcesUrl: "https://js.arcgis.com/calcite-components/2.2.0/assets",
+  resourcesUrl: "https://js.arcgis.com/calcite-components/2.7.1/assets",
 });
 
-const layerUrls = [
+const featureLayerUrls = [
   "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/NDGD_SmokeForecast_v1/FeatureServer/0",
   "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/MODIS_Thermal_v1/FeatureServer/0",
   "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/USA_Wildfires_v1/FeatureServer/1",
   "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/USA_Wildfires_v1/FeatureServer/0",
 ];
 
-const layers = layerUrls.map((url) => {
+const featureLayers = featureLayerUrls.map((url) => {
   return new FeatureLayer({
     url,
   });
 });
 
-const map = new Map({
-  basemap: "topo-vector",
+/**
+ * Credentials to sign in to the knowledge graph service:
+ * https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/BumbleBees/KnowledgeGraphServer
+ * https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/PhoneCalls/KnowledgeGraphServer
+ *
+ * username: viewer01
+ * password: I68VGU^nMurF
+ */
+const knowledgeGraphLayer = new KnowledgeGraphLayer({
+  title: "Phone calls",
+  url: `https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/PhoneCalls/KnowledgeGraphServer`,
 });
 
-layers.forEach((layer, index) => {
-  setTimeout(() => {
-    map.add(layer);
-  }, index * 3000);
+const map = new Map({
+  basemap: "topo-vector",
+  layers: [...featureLayers, knowledgeGraphLayer],
 });
 
 const view = new MapView({
@@ -44,27 +52,78 @@ const view = new MapView({
 });
 
 const layerList = new LayerList({
+  dragEnabled: true,
   filterPlaceholder: "Filter layers",
-  listItemCreatedFunction: (event) => {
+  listItemCreatedFunction: async (event) => {
     const { item } = event;
+    const { layer } = item;
+
+    await layer.load();
+
     item.panel = {
       content: "legend",
-      flowEnabled: true,
     };
 
-    item.actionsSections = [
-      [
-        {
-          title: "Create group layer",
-          icon: "folder-new",
-          id: "add-group-layer",
-        },
-      ],
-    ];
+    if (layer.type === "knowledge-graph-sublayer") {
+      item.actionsSections = [
+        [
+          {
+            title: "Open attribute table",
+            icon: "table",
+            id: "attribute-table",
+          },
+          {
+            icon: "information",
+            id: "information",
+            title: "Show information",
+          },
+        ],
+      ];
+    }
+
+    if (layer.type === "feature") {
+      item.actionsSections = [
+        [
+          {
+            title: "Create group layer",
+            icon: "folder-new",
+            id: "add-group-layer",
+          },
+        ],
+      ];
+    }
   },
   selectionMode: "multiple",
+  knowledgeGraphOptions: {
+    filterPlaceholder: "Filter tables",
+
+    listItemCreatedFunction: (event) => {
+      const { item } = event;
+      item.actionsSections = [
+        [
+          {
+            icon: "table",
+            id: "open-table",
+            title: "Show table",
+          },
+          {
+            icon: "information",
+            id: "information",
+            title: "Show information",
+          },
+        ],
+      ];
+    },
+    minFilterItems: 1,
+    visibleElements: {
+      errors: true,
+      filter: true,
+      statusIndicators: true,
+    },
+  },
   view,
   visibleElements: {
+    filter: true,
     heading: true,
     closeButton: true,
     collapseButton: true,
@@ -111,14 +170,6 @@ visibilityAppearanceSwitch.addEventListener("calciteSwitchChange", (event) => {
 });
 
 view.when(() => {
-  reactiveUtils.watch(
-    () => view.map.layers.length,
-    (length) => {
-      layerList.dragEnabled = length > 1;
-      layerList.visibleElements.filter = length > 3;
-    }
-  );
-
   layerList.selectedItems.on("change", (event) => {
     const { removed, added } = event;
     removed.forEach((item) => {
