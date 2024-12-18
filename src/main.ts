@@ -143,7 +143,7 @@ layerList.on("trigger-action", (event) => {
     });
     const layerIndex = layers.findIndex((mapLayer) => layer === mapLayer);
     parent.add(groupLayer, layerIndex + 1);
-    groupLayer.add(layer);
+    groupLayer.add(layer as Layer);
   };
 
   if (id === "add-group-layer") {
