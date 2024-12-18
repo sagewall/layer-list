@@ -41,7 +41,8 @@ const knowledgeGraphLayer = new KnowledgeGraphLayer({
 
 const map = new Map({
   basemap: "topo-vector",
-  layers: [...featureLayers, knowledgeGraphLayer],
+  // layers: [...featureLayers, knowledgeGraphLayer],
+  layers: [...featureLayers],
 });
 
 const view = new MapView({
