@@ -34,10 +34,10 @@ const featureLayers = featureLayerUrls.map((url) => {
  * username: viewer01
  * password: I68VGU^nMurF
  */
-const knowledgeGraphLayer = new KnowledgeGraphLayer({
-  title: "Phone calls",
-  url: `https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/PhoneCalls/KnowledgeGraphServer`,
-});
+// const knowledgeGraphLayer = new KnowledgeGraphLayer({
+//   title: "Phone calls",
+//   url: `https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/PhoneCalls/KnowledgeGraphServer`,
+// });
 
 const map = new Map({
   basemap: "topo-vector",
