@@ -1,17 +1,27 @@
 import Map from "@arcgis/core/Map";
 import type Collection from "@arcgis/core/core/Collection";
+import type Handles from "@arcgis/core/core/Handles";
+import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
+import CatalogLayer from "@arcgis/core/layers/CatalogLayer";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer";
-import KnowledgeGraphLayer from "@arcgis/core/layers/KnowledgeGraphLayer";
 import type Layer from "@arcgis/core/layers/Layer";
+import {
+  getCatalogLayerForLayer,
+  isLayerFromCatalog,
+} from "@arcgis/core/layers/catalog/catalogUtils";
 import MapView from "@arcgis/core/views/MapView";
+import CatalogLayerView from "@arcgis/core/views/layers/CatalogLayerView";
 import LayerList from "@arcgis/core/widgets/LayerList";
 import { defineCustomElements } from "@esri/calcite-components/dist/loader";
 import "./style.css";
 
 defineCustomElements(window, {
-  resourcesUrl: "https://js.arcgis.com/calcite-components/2.7.1/assets",
+  resourcesUrl:
+    "https://cdn.jsdelivr.net/npm/@esri/calcite-components@3.0.0-next.75/assets",
 });
+
+let highlightHandle: Handles;
 
 const featureLayerUrls = [
   "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/NDGD_SmokeForecast_v1/FeatureServer/0",
@@ -39,10 +49,15 @@ const featureLayers = featureLayerUrls.map((url) => {
 //   url: `https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/PhoneCalls/KnowledgeGraphServer`,
 // });
 
+const catalogLayer = new CatalogLayer({
+  url: "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/Sanborn_maps_catalog/FeatureServer",
+});
+catalogLayer.dynamicGroupLayer.maximumVisibleSublayers = 20;
+
 const map = new Map({
   basemap: "topo-vector",
   // layers: [...featureLayers, knowledgeGraphLayer],
-  layers: [...featureLayers],
+  layers: [...featureLayers, catalogLayer],
 });
 
 const view = new MapView({
@@ -53,47 +68,13 @@ const view = new MapView({
 });
 
 const layerList = new LayerList({
+  catalogOptions: {
+    listItemCreatedFunction,
+    selectionMode: "single",
+  },
   dragEnabled: true,
   filterPlaceholder: "Filter layers",
-  listItemCreatedFunction: async (event) => {
-    const { item } = event;
-    const { layer } = item;
-
-    await layer.load();
-
-    item.panel = {
-      content: "legend",
-    };
-
-    if (layer.type === "knowledge-graph-sublayer") {
-      item.actionsSections = [
-        [
-          {
-            title: "Open attribute table",
-            icon: "table",
-            id: "attribute-table",
-          },
-          {
-            icon: "information",
-            id: "information",
-            title: "Show information",
-          },
-        ],
-      ];
-    }
-
-    if (layer.type === "feature") {
-      item.actionsSections = [
-        [
-          {
-            title: "Create group layer",
-            icon: "folder-new",
-            id: "add-group-layer",
-          },
-        ],
-      ];
-    }
-  },
+  listItemCreatedFunction,
   selectionMode: "multiple",
   knowledgeGraphOptions: {
     filterPlaceholder: "Filter tables",
@@ -154,6 +135,10 @@ layerList.on("trigger-action", (event) => {
       addGroupLayer(layer.parent, map.layers);
     }
   }
+
+  if (id === "zoom-to") {
+    view.goTo((layer as Layer).fullExtent);
+  }
 });
 
 view.ui.add("switch-panel", "top-right");
@@ -187,3 +172,128 @@ view.when(() => {
     });
   });
 });
+
+reactiveUtils.on(
+  () => layerList.catalogLayerList,
+  "trigger-action",
+  (event: any) => {
+    if (event.action.id === "add-layer") {
+      layerList.openedLayers.pop();
+      addLayerFromDynamicGroup(event.item.layer);
+      alert(`Added ${event.item.layer.title} to the map`);
+    }
+  }
+);
+
+reactiveUtils.watch(
+  () => layerList.catalogLayerList,
+  () => {
+    highlightHandle && highlightHandle.remove();
+  }
+);
+
+reactiveUtils.watch(
+  () => layerList.selectedItems.at(0)?.layer as Layer,
+  (layer: Layer) => layer && handleLayerSelection(layer)
+);
+
+reactiveUtils.watch(
+  () => layerList.catalogLayerList?.selectedItems.at(0)?.layer as Layer,
+  (layer: Layer) => {
+    layer && handleLayerSelection(layer);
+  }
+);
+
+async function addLayerFromDynamicGroup(layer: FeatureLayer) {
+  const parentCatalogLayer = getCatalogLayerForLayer(layer);
+  const footprint = parentCatalogLayer.createFootprintFromLayer(layer);
+  const layerFromFootprint = await parentCatalogLayer.createLayerFromFootprint(
+    footprint
+  );
+  map.add(layerFromFootprint);
+}
+
+async function handleLayerSelection(layer: Layer) {
+  console.log(layer.title, layer.type, layer.persistenceEnabled);
+
+  if (layer instanceof FeatureLayer) {
+    console.log("publishingInfo.status", layer.publishingInfo?.status);
+  }
+
+  if (isLayerFromCatalog(layer)) {
+    const parentCatalogLayer = getCatalogLayerForLayer(layer);
+    const footprint = parentCatalogLayer.createFootprintFromLayer(layer);
+
+    const layerView = (await view.whenLayerView(
+      parentCatalogLayer
+    )) as CatalogLayerView;
+    await reactiveUtils.whenOnce(() => !layerView.updating);
+
+    highlightHandle?.remove();
+    highlightHandle = layerView.footprintLayerView.highlight(
+      footprint
+    ) as Handles;
+  }
+}
+
+async function listItemCreatedFunction(event: any) {
+  const { item } = event;
+  const { layer } = item;
+
+  try {
+    layer && (await layer.load());
+  } catch {
+    console.log(`load failed for ${layer.title}`);
+  }
+
+  item.panel = {
+    content: "legend",
+  };
+
+  if (layer.type === "knowledge-graph-sublayer") {
+    item.actionsSections = [
+      [
+        {
+          title: "Open attribute table",
+          icon: "table",
+          id: "attribute-table",
+        },
+        {
+          icon: "information",
+          id: "information",
+          title: "Show information",
+        },
+      ],
+    ];
+  }
+
+  if (isLayerFromCatalog(layer)) {
+    item.actionsSections = [
+      [
+        {
+          title: "Add layer to map",
+          icon: "add-layer",
+          id: "add-layer",
+        },
+      ],
+    ];
+  }
+  if (layer.type === "feature" && !isLayerFromCatalog(layer)) {
+    item.actionsSections = [
+      [
+        {
+          title: "Zoom to",
+          icon: "zoom-to-object",
+          id: "zoom-to",
+        },
+      ],
+      [
+        {
+          title: "Create group layer",
+          icon: "folder-new",
+          id: "add-group-layer",
+        },
+      ],
+    ];
+  }
+}
