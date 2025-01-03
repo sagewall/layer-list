@@ -18,7 +18,7 @@ import "./style.css";
 
 defineCustomElements(window, {
   resourcesUrl:
-    "https://cdn.jsdelivr.net/npm/@esri/calcite-components@3.0.0-next.75/assets",
+    "https://cdn.jsdelivr.net/npm/@esri/calcite-components@2.13.2/dist/calcite/assets",
 });
 
 let highlightHandle: Handles;
