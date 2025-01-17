@@ -2,14 +2,16 @@
 @import "@esri/calcite-components/dist/calcite/calcite.css";
 
 html,
-body,
-#viewDiv {
-  padding: 0;
+body {
   margin: 0;
-  height: 100%;
-  width: 100%;
 }
 
-calcite-label {
+arcgis-map {
+  display: block;
+  height: 100vh;
+}
+
+calcite-label,
+calcite-segmented-control {
   padding: 10px;
 }
