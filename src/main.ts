@@ -362,6 +362,7 @@ async function listItemCreatedFunction(event: any) {
         },
       ],
     ];
+    return;
   }
 
   if (isLayerFromCatalog(layer)) {
@@ -374,6 +375,7 @@ async function listItemCreatedFunction(event: any) {
         },
       ],
     ];
+    return;
   }
   if (!isLayerFromCatalog(layer)) {
     item.actionsSections = [
@@ -392,6 +394,7 @@ async function listItemCreatedFunction(event: any) {
         },
       ],
     ];
+    return;
   }
 }
 
