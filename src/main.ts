@@ -297,6 +297,24 @@ arcgisLayerList.addEventListener("arcgisReady", () => {
       layer && handleLayerSelection(layer);
     }
   );
+
+  reactiveUtils.watch(
+    () => arcgisLayerList.tableList?.selectedItems.at(0)?.layer as Layer,
+    (layer: Layer) => {
+      layer && handleLayerSelection(layer);
+    }
+  );
+
+  reactiveUtils.on(
+    () => arcgisLayerList.tableList,
+    "trigger-action",
+    (event: any) => {
+      if (event.action.id === "information") {
+        arcgisLayerList.openedLayers.pop();
+        alert(`${event.item.layer.title}`);
+      }
+    }
+  );
 });
 
 async function addLayerFromDynamicGroup(layer: FeatureLayer) {
