@@ -12,20 +12,16 @@ import {
   isLayerFromCatalog
 } from "@arcgis/core/layers/catalog/catalogUtils";
 import CatalogLayerView from "@arcgis/core/views/layers/CatalogLayerView";
-import "@arcgis/map-components/dist/components/arcgis-layer-list";
-import "@arcgis/map-components/dist/components/arcgis-map";
-import "@arcgis/map-components/dist/components/arcgis-placement";
-import { setAssetPath } from "@esri/calcite-components/dist/components";
-import "@esri/calcite-components/dist/components/calcite-label";
-import "@esri/calcite-components/dist/components/calcite-panel";
-import "@esri/calcite-components/dist/components/calcite-segmented-control";
-import "@esri/calcite-components/dist/components/calcite-segmented-control-item";
-import "@esri/calcite-components/dist/components/calcite-switch";
+import "@arcgis/map-components/components/arcgis-layer-list";
+import "@arcgis/map-components/components/arcgis-map";
+import "@arcgis/map-components/components/arcgis-placement";
+import "@esri/calcite-components/components/calcite-button";
+import "@esri/calcite-components/components/calcite-label";
+import "@esri/calcite-components/components/calcite-panel";
+import "@esri/calcite-components/components/calcite-segmented-control";
+import "@esri/calcite-components/components/calcite-segmented-control-item";
+import "@esri/calcite-components/components/calcite-switch";
 import "./style.css";
-
-setAssetPath(
-  "https://cdn.jsdelivr.net/npm/@esri/calcite-components@3.0.0-next.105/dist/calcite/assets"
-);
 
 let currentViewExtentLayersHandle: __esri.WatchHandle;
 let highlightHandle: Handles;
@@ -121,8 +117,27 @@ arcgisLayerList.showHeading = true;
 arcgisLayerList.position = "top-right";
 arcgisMap.appendChild(arcgisLayerList);
 
+const addLayersPlacement = document.createElement("arcgis-placement");
+addLayersPlacement.position = "top-left";
+const addLayersPanel = document.createElement("calcite-panel");
+addLayersPanel.id = "add-layers-panel";
+addLayersPanel.heading = "Add layers";
+
+const addKnowledgeGraphLayerButton = document.createElement("calcite-button");
+addKnowledgeGraphLayerButton.id = "add-catalog-layer-button";
+addKnowledgeGraphLayerButton.textContent = "Add knowledge graph layer";
+addKnowledgeGraphLayerButton.addEventListener("click", () => {
+  arcgisMap.map.layers.add(knowledgeGraphLayer);
+  addKnowledgeGraphLayerButton.disabled = true;
+});
+
+addLayersPanel.appendChild(addKnowledgeGraphLayerButton);
+addLayersPlacement.appendChild(addLayersPanel);
+arcgisMap.appendChild(addLayersPlacement);
+
 const visibilityAppearanceSwitchPlacement =
   document.createElement("arcgis-placement");
+visibilityAppearanceSwitchPlacement.position = "bottom-left";
 const visibilityAppearanceSwitchPanel = document.createElement("calcite-panel");
 visibilityAppearanceSwitchPanel.id = "switch-panel";
 visibilityAppearanceSwitchPanel.heading = "Appearance";
