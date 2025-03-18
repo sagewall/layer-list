@@ -9,7 +9,7 @@ import KnowledgeGraphLayer from "@arcgis/core/layers/KnowledgeGraphLayer";
 import type Layer from "@arcgis/core/layers/Layer";
 import {
   getCatalogLayerForLayer,
-  isLayerFromCatalog,
+  isLayerFromCatalog
 } from "@arcgis/core/layers/catalog/catalogUtils";
 import CatalogLayerView from "@arcgis/core/views/layers/CatalogLayerView";
 import "@arcgis/map-components/dist/components/arcgis-layer-list";
@@ -37,12 +37,12 @@ const featureLayerUrls = [
   "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/NDGD_SmokeForecast_v1/FeatureServer/0",
   "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/MODIS_Thermal_v1/FeatureServer/0",
   "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/USA_Wildfires_v1/FeatureServer/1",
-  "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/USA_Wildfires_v1/FeatureServer/0",
+  "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/USA_Wildfires_v1/FeatureServer/0"
 ];
 
 const featureLayers = featureLayerUrls.map((url) => {
   return new FeatureLayer({
-    url,
+    url
   });
 });
 
@@ -56,11 +56,11 @@ const featureLayers = featureLayerUrls.map((url) => {
  */
 const knowledgeGraphLayer = new KnowledgeGraphLayer({
   title: "Phone calls",
-  url: `https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/PhoneCalls/KnowledgeGraphServer`,
+  url: `https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/PhoneCalls/KnowledgeGraphServer`
 });
 
 const catalogLayer = new CatalogLayer({
-  url: "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/Sanborn_maps_catalog/FeatureServer",
+  url: "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/Sanborn_maps_catalog/FeatureServer"
 });
 catalogLayer.dynamicGroupLayer.maximumVisibleSublayers = 20;
 
@@ -74,19 +74,19 @@ if (arcgisMap.ready) {
   handleMapReady();
 } else {
   arcgisMap.addEventListener("arcgisViewReadyChange", handleMapReady, {
-    once: true,
+    once: true
   });
 }
 
 const arcgisLayerList = document.createElement("arcgis-layer-list");
 arcgisLayerList.catalogOptions = {
   listItemCreatedFunction,
-  selectionMode: "single",
+  selectionMode: "single"
 };
 arcgisLayerList.dragEnabled = true;
 arcgisLayerList.filterPlaceholder = "Filter layers";
 arcgisLayerList.listItemCreatedFunction = listItemCreatedFunction;
-arcgisLayerList.selectionMode = "multiple";
+arcgisLayerList.selectionMode = "single";
 arcgisLayerList.knowledgeGraphOptions = {
   filterPlaceholder: "Filter tables",
 
@@ -97,22 +97,22 @@ arcgisLayerList.knowledgeGraphOptions = {
         {
           icon: "table",
           id: "open-table",
-          title: "Show table",
+          title: "Show table"
         },
         {
           icon: "information",
           id: "information",
-          title: "Show information",
-        },
-      ],
+          title: "Show information"
+        }
+      ]
     ];
   },
   minFilterItems: 1,
   visibleElements: {
     errors: true,
     filter: true,
-    statusIndicators: true,
-  },
+    statusIndicators: true
+  }
 };
 arcgisLayerList.showCloseButton = true;
 arcgisLayerList.showCollapseButton = true;
@@ -215,7 +215,7 @@ arcgisLayerList.addEventListener("arcgisTriggerAction", (event) => {
     layers: Collection<Layer>
   ) => {
     const groupLayer = new GroupLayer({
-      title: "New group layer",
+      title: "New group layer"
     });
     const layerIndex = layers.findIndex((mapLayer) => layer === mapLayer);
     parent.add(groupLayer, layerIndex + 1);
@@ -303,7 +303,7 @@ async function handleLayerSelection(layer: Layer) {
   console.log(layer.title, layer.type, layer.persistenceEnabled);
 
   if (layer instanceof FeatureLayer) {
-    console.log("publishingInfo.status", layer.publishingInfo?.status);
+    console.log("Layer title:", layer.title);
   }
 
   if (isLayerFromCatalog(layer)) {
@@ -344,7 +344,7 @@ async function listItemCreatedFunction(event: any) {
   }
 
   item.panel = {
-    content: "legend",
+    content: "legend"
   };
 
   if (layer.type === "knowledge-graph-sublayer") {
@@ -353,14 +353,14 @@ async function listItemCreatedFunction(event: any) {
         {
           title: "Open attribute table",
           icon: "table",
-          id: "attribute-table",
+          id: "attribute-table"
         },
         {
           icon: "information",
           id: "information",
-          title: "Show information",
-        },
-      ],
+          title: "Show information"
+        }
+      ]
     ];
     return;
   }
@@ -371,9 +371,9 @@ async function listItemCreatedFunction(event: any) {
         {
           title: "Add layer to map",
           icon: "add-layer",
-          id: "add-layer",
-        },
-      ],
+          id: "add-layer"
+        }
+      ]
     ];
     return;
   }
@@ -383,16 +383,16 @@ async function listItemCreatedFunction(event: any) {
         {
           title: "Zoom to",
           icon: "zoom-to-object",
-          id: "zoom-to",
-        },
+          id: "zoom-to"
+        }
       ],
       [
         {
           title: "Create group layer",
           icon: "folder-new",
-          id: "add-group-layer",
-        },
-      ],
+          id: "add-group-layer"
+        }
+      ]
     ];
     return;
   }
