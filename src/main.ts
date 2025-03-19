@@ -1,6 +1,5 @@
 import Map from "@arcgis/core/Map";
 import type Collection from "@arcgis/core/core/Collection";
-import type Handles from "@arcgis/core/core/Handles";
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
 import CatalogLayer from "@arcgis/core/layers/CatalogLayer";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
@@ -26,7 +25,7 @@ import "@esri/calcite-components/components/calcite-switch";
 import "./style.css";
 
 let currentViewExtentLayersHandle: __esri.WatchHandle;
-let highlightHandle: Handles;
+let highlightHandle: IHandle;
 let visibleLayerHandle: __esri.WatchHandle;
 
 const app = document.querySelector("#app");
@@ -356,9 +355,7 @@ async function handleLayerSelection(layer: Layer) {
     if (!footprint || !layerView.footprintLayerView) {
       return;
     }
-    highlightHandle = layerView.footprintLayerView.highlight(
-      footprint
-    ) as Handles;
+    highlightHandle = layerView.footprintLayerView.highlight(footprint);
   }
 }
 
