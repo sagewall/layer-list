@@ -104,7 +104,7 @@ arcgisLayerList.showCloseButton = true;
 arcgisLayerList.showCollapseButton = true;
 arcgisLayerList.showFilter = true;
 arcgisLayerList.showHeading = true;
-arcgisLayerList.slot = "bottom-right";
+arcgisLayerList.slot = "top-right";
 viewElement.appendChild(arcgisLayerList);
 
 const optionsPanel = document.createElement("calcite-panel");
