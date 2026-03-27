@@ -1,5 +1,6 @@
 import Map from "@arcgis/core/Map";
 import type Collection from "@arcgis/core/core/Collection";
+import type { ResourceHandle } from "@arcgis/core/core/Handles";
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
 import CatalogLayer from "@arcgis/core/layers/CatalogLayer";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
@@ -8,14 +9,14 @@ import KnowledgeGraphLayer from "@arcgis/core/layers/KnowledgeGraphLayer";
 import type Layer from "@arcgis/core/layers/Layer";
 import {
   getCatalogLayerForLayer,
-  isLayerFromCatalog
+  isLayerFromCatalog,
 } from "@arcgis/core/layers/catalog/catalogUtils";
 import ActionButton from "@arcgis/core/support/actions/ActionButton";
 import CatalogLayerView from "@arcgis/core/views/layers/CatalogLayerView";
 import type ListItem from "@arcgis/core/widgets/LayerList/ListItem";
 import "@arcgis/map-components/components/arcgis-layer-list";
 import "@arcgis/map-components/components/arcgis-map";
-import "@arcgis/map-components/components/arcgis-placement";
+import "@esri/calcite-components/components/calcite-shell";
 import "@esri/calcite-components/components/calcite-button";
 import "@esri/calcite-components/components/calcite-label";
 import "@esri/calcite-components/components/calcite-panel";
@@ -24,9 +25,9 @@ import "@esri/calcite-components/components/calcite-segmented-control-item";
 import "@esri/calcite-components/components/calcite-switch";
 import "./style.css";
 
-let currentViewExtentLayersHandle: __esri.WatchHandle;
-let highlightHandle: IHandle;
-let visibleLayerHandle: __esri.WatchHandle;
+let currentViewExtentLayersHandle: ResourceHandle;
+let highlightHandle: ResourceHandle;
+let visibleLayerHandle: ResourceHandle;
 
 const app = document.querySelector("#app");
 
@@ -34,12 +35,12 @@ const featureLayerUrls = [
   "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/NDGD_SmokeForecast_v1/FeatureServer/0",
   "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/MODIS_Thermal_v1/FeatureServer/0",
   "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/USA_Wildfires_v1/FeatureServer/1",
-  "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/USA_Wildfires_v1/FeatureServer/0"
+  "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/USA_Wildfires_v1/FeatureServer/0",
 ];
 
 const featureLayers = featureLayerUrls.map((url) => {
   return new FeatureLayer({
-    url
+    url,
   });
 });
 
@@ -53,16 +54,16 @@ const featureLayers = featureLayerUrls.map((url) => {
  */
 const knowledgeGraphLayer = new KnowledgeGraphLayer({
   title: "Phone calls",
-  url: `https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/PhoneCalls/KnowledgeGraphServer`
+  url: "https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/BumbleBees/KnowledgeGraphServer",
 });
 
 const catalogLayer = new CatalogLayer({
-  url: "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/Sanborn_maps_catalog/FeatureServer"
+  url: "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/Sanborn_maps_catalog/FeatureServer",
 });
 catalogLayer.dynamicGroupLayer.maximumVisibleSublayers = 20;
 
 const arcgisMap = document.createElement("arcgis-map");
-arcgisMap.basemap = "topo-vector";
+arcgisMap.itemId = "512944c00f8a4219a4bb70691089c9e9";
 arcgisMap.center = [-105, 39];
 arcgisMap.zoom = 7;
 app?.appendChild(arcgisMap);
@@ -71,7 +72,7 @@ if (arcgisMap.ready) {
   handleMapReady();
 } else {
   arcgisMap.addEventListener("arcgisViewReadyChange", handleMapReady, {
-    once: true
+    once: true,
   });
 }
 
@@ -83,7 +84,7 @@ arcgisLayerList.selectionMode = "single";
 arcgisLayerList.knowledgeGraphOptions = {
   filterPlaceholder: "Filter tables",
 
-  listItemCreatedFunction: (event: { item: ListItem }) => {
+  listItemCreatedFunction: (event) => {
     const { item } = event;
 
     item.actionsSections = [
@@ -91,9 +92,10 @@ arcgisLayerList.knowledgeGraphOptions = {
         {
           icon: "information",
           id: "information",
-          title: "Show information"
-        }
-      ]
+          title: "Show information",
+          type: "button",
+        },
+      ],
     ];
   },
   minFilterItems: 1,
@@ -101,18 +103,18 @@ arcgisLayerList.knowledgeGraphOptions = {
   visibleElements: {
     errors: true,
     filter: true,
-    statusIndicators: true
-  }
+    statusIndicators: true,
+  },
 };
 arcgisLayerList.showCloseButton = true;
 arcgisLayerList.showCollapseButton = true;
 arcgisLayerList.showFilter = true;
 arcgisLayerList.showHeading = true;
-arcgisLayerList.position = "top-right";
+arcgisLayerList.slot = "top-right";
 arcgisMap.appendChild(arcgisLayerList);
 
 const addLayersPlacement = document.createElement("arcgis-placement");
-addLayersPlacement.position = "top-left";
+addLayersPlacement.slot = "top-left";
 const addLayersPanel = document.createElement("calcite-panel");
 addLayersPanel.id = "add-layers-panel";
 addLayersPanel.heading = "Add layers";
@@ -121,8 +123,10 @@ const addKnowledgeGraphLayerButton = document.createElement("calcite-button");
 addKnowledgeGraphLayerButton.id = "add-catalog-layer-button";
 addKnowledgeGraphLayerButton.textContent = "Add knowledge graph layer";
 addKnowledgeGraphLayerButton.addEventListener("click", () => {
-  arcgisMap.map.layers.add(knowledgeGraphLayer);
-  addKnowledgeGraphLayerButton.disabled = true;
+  if (arcgisMap.map) {
+    arcgisMap.map.layers.add(knowledgeGraphLayer);
+    addKnowledgeGraphLayerButton.disabled = true;
+  }
 });
 
 addLayersPanel.appendChild(addKnowledgeGraphLayerButton);
@@ -131,7 +135,7 @@ arcgisMap.appendChild(addLayersPlacement);
 
 const visibilityAppearanceSwitchPlacement =
   document.createElement("arcgis-placement");
-visibilityAppearanceSwitchPlacement.position = "bottom-left";
+visibilityAppearanceSwitchPlacement.slot = "bottom-left";
 const visibilityAppearanceSwitchPanel = document.createElement("calcite-panel");
 visibilityAppearanceSwitchPanel.id = "switch-panel";
 visibilityAppearanceSwitchPanel.heading = "Appearance";
@@ -150,24 +154,24 @@ visibilityAppearanceSwitch.addEventListener("calciteSwitchChange", (event) => {
 visibilityAppearanceSwitchLabel.appendChild(visibilityAppearanceSwitch);
 visibilityAppearanceSwitchPanel.appendChild(visibilityAppearanceSwitchLabel);
 visibilityAppearanceSwitchPlacement.appendChild(
-  visibilityAppearanceSwitchPanel
+  visibilityAppearanceSwitchPanel,
 );
 arcgisMap.appendChild(visibilityAppearanceSwitchPlacement);
 
 const filterPredicateSegmentedControlPlacement =
   document.createElement("arcgis-placement");
-filterPredicateSegmentedControlPlacement.position = "top-left";
+filterPredicateSegmentedControlPlacement.slot = "top-left";
 
 const filterPredicateSegmentedControlPanel =
   document.createElement("calcite-panel");
 filterPredicateSegmentedControlPanel.heading = "filterPredicate";
 
 const filterPredicateSegmentedControl = document.createElement(
-  "calcite-segmented-control"
+  "calcite-segmented-control",
 );
 
 const allSegmentedControlItem = document.createElement(
-  "calcite-segmented-control-item"
+  "calcite-segmented-control-item",
 );
 allSegmentedControlItem.checked = true;
 allSegmentedControlItem.textContent = "All layers";
@@ -175,14 +179,14 @@ allSegmentedControlItem.value = "all";
 filterPredicateSegmentedControl.appendChild(allSegmentedControlItem);
 
 const visibleSegmentedControlItem = document.createElement(
-  "calcite-segmented-control-item"
+  "calcite-segmented-control-item",
 );
 visibleSegmentedControlItem.textContent = "Visible layers";
 visibleSegmentedControlItem.value = "visible";
 filterPredicateSegmentedControl.appendChild(visibleSegmentedControlItem);
 
 const extentSegmentedControlItem = document.createElement(
-  "calcite-segmented-control-item"
+  "calcite-segmented-control-item",
 );
 extentSegmentedControlItem.textContent = "Layers in view extent";
 extentSegmentedControlItem.value = "extent";
@@ -204,14 +208,14 @@ filterPredicateSegmentedControl.addEventListener(
       default:
         showAll();
     }
-  }
+  },
 );
 
 filterPredicateSegmentedControlPanel.appendChild(
-  filterPredicateSegmentedControl
+  filterPredicateSegmentedControl,
 );
 filterPredicateSegmentedControlPlacement.appendChild(
-  filterPredicateSegmentedControlPanel
+  filterPredicateSegmentedControlPanel,
 );
 arcgisMap.appendChild(filterPredicateSegmentedControlPlacement);
 
@@ -221,10 +225,10 @@ arcgisLayerList.addEventListener("arcgisTriggerAction", (event) => {
 
   const addGroupLayer = (
     parent: Map | GroupLayer,
-    layers: Collection<Layer>
+    layers: Collection<Layer>,
   ) => {
     const groupLayer = new GroupLayer({
-      title: "New group layer"
+      title: "New group layer",
     });
     const layerIndex = layers.findIndex((mapLayer) => layer === mapLayer);
     parent.add(groupLayer, layerIndex + 1);
@@ -235,19 +239,24 @@ arcgisLayerList.addEventListener("arcgisTriggerAction", (event) => {
     if (layer.parent instanceof GroupLayer) {
       addGroupLayer(layer.parent, layer.parent.layers);
     } else if (layer.parent instanceof Map) {
-      addGroupLayer(layer.parent, arcgisMap.map.layers);
+      if (arcgisMap.map) {
+        addGroupLayer(layer.parent, arcgisMap.map.layers);
+      }
     }
   }
 
   if (id === "zoom-to") {
-    arcgisMap.goTo((layer as Layer).fullExtent);
+    const fullExtent = (layer as Layer).fullExtent;
+    if (fullExtent) {
+      arcgisMap.goTo(fullExtent);
+    }
   }
 });
 
 arcgisLayerList.addEventListener("arcgisReady", (event) => {
   event.target?.selectedItems.on(
     "change",
-    (event: { removed: Collection<ListItem>; added: Collection<ListItem> }) => {
+    (event: { removed: ListItem[]; added: ListItem[] }) => {
       const { removed, added } = event;
       removed.forEach((item: ListItem) => {
         const { layer } = item;
@@ -261,7 +270,7 @@ arcgisLayerList.addEventListener("arcgisReady", (event) => {
           layer.effect = "drop-shadow(2px, 2px, 3px) saturate(250%)";
         }
       });
-    }
+    },
   );
 
   reactiveUtils.on(
@@ -275,9 +284,12 @@ arcgisLayerList.addEventListener("arcgisReady", (event) => {
       }
 
       if (event.action.id === "zoom-to") {
-        arcgisMap.goTo((event.item.layer as Layer).fullExtent);
+        const fullExtent = (event.item.layer as Layer).fullExtent;
+        if (fullExtent) {
+          arcgisMap.goTo(fullExtent);
+        }
       }
-    }
+    },
   );
 
   reactiveUtils.on(
@@ -287,33 +299,33 @@ arcgisLayerList.addEventListener("arcgisReady", (event) => {
       if (event.action.id === "information") {
         alert(`${event.item.layer.title}`);
       }
-    }
+    },
   );
 
   reactiveUtils.watch(
     () => event.target?.catalogLayerList,
     () => {
       highlightHandle && highlightHandle.remove();
-    }
+    },
   );
 
   reactiveUtils.watch(
     () => event.target?.catalogLayerList?.selectedItems.at(0)?.layer as Layer,
     (layer: Layer) => {
       layer && handleLayerSelection(layer);
-    }
+    },
   );
 
   reactiveUtils.watch(
     () => event.target?.selectedItems.at(0)?.layer as Layer,
-    (layer: Layer) => layer && handleLayerSelection(layer)
+    (layer: Layer) => layer && handleLayerSelection(layer),
   );
 
   reactiveUtils.watch(
     () => event.target?.tableList?.selectedItems.at(0)?.layer as Layer,
     (layer: Layer) => {
       layer && handleLayerSelection(layer);
-    }
+    },
   );
 });
 
@@ -326,10 +338,9 @@ async function addLayerFromDynamicGroup(layer: FeatureLayer) {
   if (!footprint) {
     return;
   }
-  const layerFromFootprint = await parentCatalogLayer.createLayerFromFootprint(
-    footprint
-  );
-  arcgisMap.addLayer(layerFromFootprint);
+  const layerFromFootprint =
+    await parentCatalogLayer.createLayerFromFootprint(footprint);
+  arcgisMap.map?.layers.add(layerFromFootprint);
 }
 
 async function handleLayerSelection(layer: Layer) {
@@ -347,7 +358,7 @@ async function handleLayerSelection(layer: Layer) {
     const footprint = parentCatalogLayer.createFootprintFromLayer(layer);
 
     const layerView = (await arcgisMap.view.whenLayerView(
-      parentCatalogLayer
+      parentCatalogLayer,
     )) as CatalogLayerView;
     await reactiveUtils.whenOnce(() => !layerView.updating);
 
@@ -360,7 +371,7 @@ async function handleLayerSelection(layer: Layer) {
 }
 
 function handleMapReady() {
-  arcgisMap.addLayers([...featureLayers, catalogLayer]);
+  arcgisMap.map?.layers.addMany([...featureLayers, catalogLayer]);
 }
 
 async function listItemCreatedFunction(event: { item: ListItem }) {
@@ -383,7 +394,7 @@ async function listItemCreatedFunction(event: { item: ListItem }) {
       layer.type !== "catalog-dynamic-group"
     ) {
       item.panel = {
-        content: "legend"
+        content: "legend",
       };
     }
 
@@ -392,8 +403,8 @@ async function listItemCreatedFunction(event: { item: ListItem }) {
         new ActionButton({
           title: "Zoom to",
           icon: "zoom-to-object",
-          id: "zoom-to"
-        })
+          id: "zoom-to",
+        }),
       );
     }
 
@@ -407,8 +418,8 @@ async function listItemCreatedFunction(event: { item: ListItem }) {
         new ActionButton({
           title: "Create group layer",
           icon: "folder-new",
-          id: "add-group-layer"
-        })
+          id: "add-group-layer",
+        }),
       );
     }
 
@@ -417,8 +428,8 @@ async function listItemCreatedFunction(event: { item: ListItem }) {
         new ActionButton({
           title: "Add layer to map",
           icon: "add-layer",
-          id: "add-layer"
-        })
+          id: "add-layer",
+        }),
       );
     }
   }
@@ -433,13 +444,13 @@ function showAll() {
 function showAtCurrentViewExtent() {
   currentViewExtentLayersHandle = reactiveUtils.watch(
     () =>
-      arcgisMap.map.allLayers.filter((layer) => {
+      (arcgisMap.map?.allLayers.filter((layer): layer is Layer => {
         if (!layer.fullExtent) {
           return false;
         }
         return arcgisMap.view.extent.intersects(layer.fullExtent);
-      }),
-    (layers) => {
+      }) ?? []) as Layer[],
+    (layers: Layer[]) => {
       arcgisLayerList.filterPredicate = (item) => {
         if (!item || !item.layer) {
           return false;
@@ -448,14 +459,17 @@ function showAtCurrentViewExtent() {
         return layers.includes(layer);
       };
     },
-    { initial: true }
+    { initial: true },
   );
 }
 
 function showVisible() {
   visibleLayerHandle = reactiveUtils.watch(
-    () => arcgisMap.map.allLayers.filter((layer) => layer.visible),
-    (layers) => {
+    () =>
+      (arcgisMap.map?.allLayers.filter(
+        (layer): layer is Layer => layer.visible,
+      ) ?? []) as Layer[],
+    (layers: Layer[]) => {
       arcgisLayerList.filterPredicate = (item) => {
         if (!item || !item.layer) {
           return false;
@@ -464,6 +478,6 @@ function showVisible() {
         return layers.includes(layer);
       };
     },
-    { initial: true }
+    { initial: true },
   );
 }

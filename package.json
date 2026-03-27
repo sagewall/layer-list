@@ -1,5 +1,5 @@
 {
-  "name": "layer-list",
+  "name": "vite-project",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,10 +9,10 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "typescript": "~5.8.2",
-    "vite": "^6.2.2"
+    "typescript": "~5.9.3",
+    "vite": "^8.0.1"
   },
   "dependencies": {
-    "@arcgis/map-components": "~4.32.11"
+    "@arcgis/map-components": "^5.1.0-next.56"
   }
 }
