@@ -1,10 +1,9 @@
-html,
-body {
-  height: 100vh;
-  margin: 0;
-}
-
+calcite-button,
 calcite-label,
 calcite-segmented-control {
-  padding: 10px;
+  margin: 3px;
+}
+
+#visibility-appearance-switch-label {
+  --calcite-label-margin-bottom: 0;
 }
