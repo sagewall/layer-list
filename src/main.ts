@@ -26,6 +26,7 @@ import "@esri/calcite-components/components/calcite-switch";
 import "./style.css";
 
 let highlightHandle: ResourceHandle;
+
 const filterModeHandles: ResourceHandle[] = [];
 const layerListHandles: ResourceHandle[] = [];
 
@@ -188,40 +189,6 @@ optionsPanel.appendChild(filterPredicateSegmentedControl);
 
 viewElement.appendChild(optionsPanel);
 
-arcgisLayerList.addEventListener("arcgisTriggerAction", (event) => {
-  const { id } = event.detail.action;
-  const { layer } = event.detail.item;
-
-  const addGroupLayer = (
-    parent: Map | GroupLayer,
-    layers: Collection<Layer>,
-  ) => {
-    const groupLayer = new GroupLayer({
-      title: "New group layer",
-    });
-    const layerIndex = layers.findIndex((mapLayer) => layer === mapLayer);
-    parent.add(groupLayer, layerIndex + 1);
-    groupLayer.add(layer as Layer);
-  };
-
-  if (id === "add-group-layer" && layer) {
-    if (layer.parent instanceof GroupLayer) {
-      addGroupLayer(layer.parent, layer.parent.layers);
-    } else if (layer.parent instanceof Map) {
-      if (viewElement.map) {
-        addGroupLayer(layer.parent, viewElement.map.layers);
-      }
-    }
-  }
-
-  if (id === "zoom-to") {
-    const fullExtent = (layer as Layer).fullExtent;
-    if (fullExtent) {
-      viewElement.goTo(fullExtent);
-    }
-  }
-});
-
 arcgisLayerList.addEventListener("arcgisReady", (event) => {
   const selectedItemsChangeHandle = event.target?.selectedItems.on(
     "change",
@@ -241,6 +208,40 @@ arcgisLayerList.addEventListener("arcgisReady", (event) => {
       });
     },
   );
+
+  arcgisLayerList.addEventListener("arcgisTriggerAction", (event) => {
+    const { id } = event.detail.action;
+    const { layer } = event.detail.item;
+
+    const addGroupLayer = (
+      parent: Map | GroupLayer,
+      layers: Collection<Layer>,
+    ) => {
+      const groupLayer = new GroupLayer({
+        title: "New group layer",
+      });
+      const layerIndex = layers.findIndex((mapLayer) => layer === mapLayer);
+      parent.add(groupLayer, layerIndex + 1);
+      groupLayer.add(layer as Layer);
+    };
+
+    if (id === "add-group-layer" && layer) {
+      if (layer.parent instanceof GroupLayer) {
+        addGroupLayer(layer.parent, layer.parent.layers);
+      } else if (layer.parent instanceof Map) {
+        if (viewElement.map) {
+          addGroupLayer(layer.parent, viewElement.map.layers);
+        }
+      }
+    }
+
+    if (id === "zoom-to") {
+      const fullExtent = (layer as Layer).fullExtent;
+      if (fullExtent) {
+        viewElement.goTo(fullExtent);
+      }
+    }
+  });
 
   if (selectedItemsChangeHandle) {
     layerListHandles.push(selectedItemsChangeHandle);
@@ -271,24 +272,13 @@ arcgisLayerList.addEventListener("arcgisReady", (event) => {
   );
   layerListHandles.push(catalogLayerListActionHandle);
 
-  const tableListActionHandle = reactiveUtils.on(
-    () => event.target?.tableList,
-    "trigger-action",
-    (event: any) => {
-      if (event.action.id === "information") {
-        alert(`${event.item.layer.title}`);
-      }
-    },
-  );
-  layerListHandles.push(tableListActionHandle);
-
-  const catalogListWatchHandle = reactiveUtils.watch(
+  const catalogListHighlightWatchHandle = reactiveUtils.watch(
     () => event.target?.catalogLayerList,
     () => {
       highlightHandle && highlightHandle.remove();
     },
   );
-  layerListHandles.push(catalogListWatchHandle);
+  layerListHandles.push(catalogListHighlightWatchHandle);
 
   const catalogSelectionWatchHandle = reactiveUtils.watch(
     () => event.target?.catalogLayerList?.selectedItems.at(0)?.layer as Layer,
@@ -304,6 +294,17 @@ arcgisLayerList.addEventListener("arcgisReady", (event) => {
   );
   layerListHandles.push(selectedItemsWatchHandle);
 
+  const tableListActionHandle = reactiveUtils.on(
+    () => event.target?.tableList,
+    "trigger-action",
+    (event: any) => {
+      if (event.action.id === "information") {
+        alert(`${event.item.layer.title}`);
+      }
+    },
+  );
+  layerListHandles.push(tableListActionHandle);
+
   const tableSelectionWatchHandle = reactiveUtils.watch(
     () => event.target?.tableList?.selectedItems.at(0)?.layer as Layer,
     (layer: Layer) => {
@@ -315,19 +316,9 @@ arcgisLayerList.addEventListener("arcgisReady", (event) => {
 
 window.addEventListener("beforeunload", () => {
   clearFilterModeHandles();
+  clearLayerListHandles();
   highlightHandle?.remove();
-  for (const handle of layerListHandles) {
-    handle.remove();
-  }
-  layerListHandles.length = 0;
 });
-
-function clearFilterModeHandles() {
-  for (const handle of filterModeHandles) {
-    handle.remove();
-  }
-  filterModeHandles.length = 0;
-}
 
 async function addLayerFromDynamicGroup(layer: FeatureLayer) {
   const parentCatalogLayer = getCatalogLayerForLayer(layer);
@@ -341,6 +332,20 @@ async function addLayerFromDynamicGroup(layer: FeatureLayer) {
   const layerFromFootprint =
     await parentCatalogLayer.createLayerFromFootprint(footprint);
   viewElement.map?.layers.add(layerFromFootprint);
+}
+
+function clearFilterModeHandles() {
+  for (const handle of filterModeHandles) {
+    handle.remove();
+  }
+  filterModeHandles.length = 0;
+}
+
+function clearLayerListHandles() {
+  for (const handle of layerListHandles) {
+    handle.remove();
+  }
+  layerListHandles.length = 0;
 }
 
 async function handleLayerSelection(layer: Layer) {
