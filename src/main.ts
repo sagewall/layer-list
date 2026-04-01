@@ -218,13 +218,6 @@ async function setupLayerList(
           alert(`Unable to add ${event.item.layer.title} to the map`);
         }
       }
-
-      if (event.action.id === "zoom-to") {
-        const fullExtent = (event.item.layer as Layer).fullExtent;
-        if (fullExtent) {
-          viewElement.goTo(fullExtent);
-        }
-      }
     },
   );
   layerListHandles.push(catalogLayerListActionHandle);
