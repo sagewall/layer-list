@@ -239,14 +239,14 @@ async function setupLayerList(
 
   const catalogSelectionWatchHandle = reactiveUtils.watch(
     () =>
-      layerListElement.catalogLayerList?.selectedItems.at(0)?.layer as Layer,
+      layerListElement.catalogLayerList?.selectedItems?.at(0)?.layer as Layer,
     (layer: Layer) => {
       layer && handleLayerSelection(layer);
     },
   );
   layerListHandles.push(catalogSelectionWatchHandle);
 
-  const selectedItemsChangeHandle = layerListElement.selectedItems.on(
+  const selectedItemsChangeHandle = layerListElement.selectedItems?.on(
     "change",
     (event: { removed: ListItem[]; added: ListItem[] }) => {
       const { removed, added } = event;
@@ -267,7 +267,7 @@ async function setupLayerList(
   layerListHandles.push(selectedItemsChangeHandle);
 
   const selectedItemsWatchHandle = reactiveUtils.watch(
-    () => layerListElement.selectedItems.at(0)?.layer as Layer,
+    () => layerListElement.selectedItems?.at(0)?.layer as Layer,
     (layer: Layer) => layer && handleLayerSelection(layer),
   );
   layerListHandles.push(selectedItemsWatchHandle);
