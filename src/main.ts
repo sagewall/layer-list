@@ -408,6 +408,20 @@ async function handleLayerSelection(layer: Layer) {
   }
 }
 
+function itemMatchesCurrentFilterText(item: ListItem): boolean {
+  const filterText = ((activeLayerListElement as any).filterText ?? "")
+    .trim()
+    .toLowerCase();
+  if (!filterText) {
+    return true;
+  }
+
+  const itemTitle = ((item.title ?? item.layer?.title ?? "") as string)
+    .trim()
+    .toLowerCase();
+  return itemTitle.includes(filterText);
+}
+
 async function listItemCreatedFunction(event: { item: ListItem }) {
   const { item } = event;
   const { layer } = item;
@@ -517,7 +531,7 @@ function showAtCurrentViewExtent() {
             return false;
           }
           const layer = item.layer as Layer;
-          return layers.includes(layer);
+          return layers.includes(layer) && itemMatchesCurrentFilterText(item);
         };
       },
       { initial: true },
@@ -539,7 +553,7 @@ function showVisible() {
             return false;
           }
           const layer = item.layer as Layer;
-          return layers.includes(layer);
+          return layers.includes(layer) && itemMatchesCurrentFilterText(item);
         };
       },
       { initial: true },
