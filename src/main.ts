@@ -2,7 +2,6 @@ import Map from "@arcgis/core/Map";
 import type Collection from "@arcgis/core/core/Collection";
 import type { ResourceHandle } from "@arcgis/core/core/Handles";
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
-import CatalogLayer from "@arcgis/core/layers/CatalogLayer";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import GroupLayer from "@arcgis/core/layers/GroupLayer";
 import KnowledgeGraphLayer from "@arcgis/core/layers/KnowledgeGraphLayer";
@@ -37,19 +36,6 @@ const layerListHandles: ResourceHandle[] = [];
 
 const app = document.querySelector("#app");
 
-const featureLayerUrls = [
-  "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/NDGD_SmokeForecast_v1/FeatureServer/0",
-  "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/MODIS_Thermal_v1/FeatureServer/0",
-  "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/USA_Wildfires_v1/FeatureServer/1",
-  "https://services9.arcgis.com/RHVPKKiFTONKtxq3/arcgis/rest/services/USA_Wildfires_v1/FeatureServer/0",
-];
-
-const featureLayers = featureLayerUrls.map((url) => {
-  return new FeatureLayer({
-    url,
-  });
-});
-
 /**
  * Credentials to sign in to the knowledge graph service:
  * https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/BumbleBees/KnowledgeGraphServer
@@ -62,11 +48,6 @@ const knowledgeGraphLayer = new KnowledgeGraphLayer({
   url: "https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/BumbleBees/KnowledgeGraphServer",
 });
 
-const catalogLayer = new CatalogLayer({
-  url: "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/Sanborn_maps_catalog/FeatureServer",
-});
-catalogLayer.dynamicGroupLayer.maximumVisibleSublayers = 20;
-
 const viewElement = document.createElement("arcgis-map");
 viewElement.itemId = "512944c00f8a4219a4bb70691089c9e9";
 viewElement.center = [-105, 39];
@@ -74,7 +55,6 @@ viewElement.zoom = 7;
 app?.appendChild(viewElement);
 
 await viewElement.viewOnReady();
-viewElement.map?.layers.addMany([...featureLayers, catalogLayer]);
 
 viewElement.appendChild(activeLayerListElement);
 
