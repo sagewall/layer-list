@@ -409,7 +409,13 @@ async function handleLayerSelection(layer: Layer) {
 }
 
 function itemMatchesCurrentFilterText(item: ListItem): boolean {
-  const filterText = ((activeLayerListElement as any).filterText ?? "")
+  const filterText = (
+    (
+      activeLayerListElement as
+        | HTMLArcgisLayerListElement
+        | HTMLArcgisLayerListNewElement
+    ).filterText ?? ""
+  )
     .trim()
     .toLowerCase();
   if (!filterText) {
