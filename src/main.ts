@@ -204,23 +204,46 @@ async function setupLayerList(
 
   setFilterPredicate(getSelectedFilterMode());
 
-  const catalogLayerListActionHandle = reactiveUtils.on(
-    () => layerListElement.catalogLayerList,
-    "trigger-action",
-    async (event: any) => {
-      if (event.action.id === "add-layer") {
-        layerListElement?.openedLayers?.pop();
-        try {
-          await addLayerFromDynamicGroup(event.item.layer);
-          alert(`Added ${event.item.layer.title} to the map`);
-        } catch (error) {
-          console.error("Failed to add layer from dynamic group", error);
-          alert(`Unable to add ${event.item.layer.title} to the map`);
+  if (!isUsingLayerListNew) {
+    const catalogLayerListActionHandle = reactiveUtils.on(
+      () => layerListElement.catalogLayerList,
+      "trigger-action",
+      async (event: any) => {
+        if (event.action.id === "add-layer") {
+          layerListElement?.openedLayers?.pop();
+          try {
+            await addLayerFromDynamicGroup(event.item.layer);
+            alert(`Added ${event.item.layer.title} to the map`);
+          } catch (error) {
+            console.error("Failed to add layer from dynamic group", error);
+            alert(`Unable to add ${event.item.layer.title} to the map`);
+          }
         }
-      }
-    },
-  );
-  layerListHandles.push(catalogLayerListActionHandle);
+      },
+    );
+    layerListHandles.push(catalogLayerListActionHandle);
+  }
+
+  if (isUsingLayerListNew) {
+    const catalogLayerListActionHandle = reactiveUtils.on(
+      () => layerListElement.catalogLayerList,
+      "arcgisTriggerAction",
+      async (event: any) => {
+        const { action, item } = event.detail;
+        if (action.id === "add-layer") {
+          layerListElement?.openedLayers?.pop();
+          try {
+            await addLayerFromDynamicGroup(item.layer);
+            alert(`Added ${item.layer.title} to the map`);
+          } catch (error) {
+            console.error("Failed to add layer from dynamic group", error);
+            alert(`Unable to add ${item.layer.title} to the map`);
+          }
+        }
+      },
+    );
+    layerListHandles.push(catalogLayerListActionHandle);
+  }
 
   const catalogListHighlightWatchHandle = reactiveUtils.watch(
     () => layerListElement.catalogLayerList,
@@ -265,16 +288,32 @@ async function setupLayerList(
   );
   layerListHandles.push(selectedItemsWatchHandle);
 
-  const tableListActionHandle = reactiveUtils.on(
-    () => layerListElement.tableList,
-    "trigger-action",
-    (event: any) => {
-      if (event.action.id === "information") {
-        alert(`${event.item.layer.title}`);
-      }
-    },
-  );
-  layerListHandles.push(tableListActionHandle);
+  if (!isUsingLayerListNew) {
+    const tableListActionHandle = reactiveUtils.on(
+      () => layerListElement.tableList,
+      "trigger-action",
+      (event: any) => {
+        if (event.action.id === "information") {
+          alert(`${event.item.layer.title}`);
+        }
+      },
+    );
+    layerListHandles.push(tableListActionHandle);
+  }
+
+  if (isUsingLayerListNew) {
+    const tableListActionHandle = reactiveUtils.on(
+      () => layerListElement.tableList,
+      "arcgisTriggerAction",
+      (event: any) => {
+        const { action, item } = event.detail;
+        if (action.id === "information") {
+          alert(`${item.layer?.title}`);
+        }
+      },
+    );
+    layerListHandles.push(tableListActionHandle);
+  }
 
   const tableSelectionWatchHandle = reactiveUtils.watch(
     () => layerListElement.tableList?.selectedItems?.at(0)?.layer as Layer,
