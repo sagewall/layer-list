@@ -209,7 +209,7 @@ async function setupLayerList(
     "trigger-action",
     async (event: any) => {
       if (event.action.id === "add-layer") {
-        layerListElement?.openedLayers.pop();
+        layerListElement?.openedLayers?.pop();
         try {
           await addLayerFromDynamicGroup(event.item.layer);
           alert(`Added ${event.item.layer.title} to the map`);
