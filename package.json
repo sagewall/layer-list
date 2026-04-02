@@ -13,6 +13,8 @@
     "vite": "^8.0.1"
   },
   "dependencies": {
-    "@arcgis/map-components": "5.1.0-next.61"
+    "@arcgis/core": "^5.1.0-next.60",
+    "@arcgis/map-components": "^5.1.0-next.62",
+    "@esri/calcite-components": "^5.0.2"
   }
 }
