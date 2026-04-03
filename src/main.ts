@@ -210,14 +210,20 @@ async function setupLayerList(
       "trigger-action",
       async (event: any) => {
         if (event.action.id === "add-layer") {
-          layerListElement?.openedLayers?.pop();
           try {
+            const parentCatalogLayer = getCatalogLayerForLayer(
+              event.item.layer,
+            );
+            if (!parentCatalogLayer) {
+              return;
+            }
             await addLayerFromDynamicGroup(event.item.layer);
             alert(`Added ${event.item.layer.title} to the map`);
           } catch (error) {
             console.error("Failed to add layer from dynamic group", error);
             alert(`Unable to add ${event.item.layer.title} to the map`);
           }
+          layerListElement?.openedLayers?.pop();
         }
       },
     );
@@ -231,14 +237,18 @@ async function setupLayerList(
       async (event: any) => {
         const { action, item } = event.detail;
         if (action.id === "add-layer") {
-          layerListElement?.openedLayers?.pop();
           try {
+            const parentCatalogLayer = getCatalogLayerForLayer(item.layer);
+            if (!parentCatalogLayer) {
+              return;
+            }
             await addLayerFromDynamicGroup(item.layer);
             alert(`Added ${item.layer.title} to the map`);
           } catch (error) {
             console.error("Failed to add layer from dynamic group", error);
             alert(`Unable to add ${item.layer.title} to the map`);
           }
+          layerListElement?.openedLayers?.pop();
         }
       },
     );
@@ -509,7 +519,10 @@ async function listItemCreatedFunction(event: { item: ListItem }) {
       );
     }
 
-    if (isLayerFromCatalog(layer as Layer)) {
+    if (
+      isLayerFromCatalog(layer as Layer) &&
+      getCatalogLayerForLayer(layer as Layer)
+    ) {
       item.actionsSections.getItemAt(0)?.push(
         new ActionButton({
           title: "Add layer to map",
