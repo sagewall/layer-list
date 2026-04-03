@@ -508,7 +508,10 @@ async function listItemCreatedFunction(event: { item: ListItem }) {
       !isLayerFromCatalog(layer as Layer) &&
       layer.type !== "catalog-dynamic-group" &&
       layer.type !== "catalog-footprint" &&
-      layer.type !== "knowledge-graph-sublayer"
+      layer.type !== "knowledge-graph-sublayer" &&
+      layer.type !== "sublayer" &&
+      layer.type !== "subtype-group" &&
+      layer.type !== "subtype-sublayer"
     ) {
       item.actionsSections.getItemAt(0)?.push(
         new ActionButton({
