@@ -34,7 +34,8 @@ let highlightHandle: ResourceHandle;
 const filterModeHandles: ResourceHandle[] = [];
 const layerListHandles: ResourceHandle[] = [];
 
-const app = document.querySelector("#app");
+const app = document.querySelector("#app")!;
+const html = document.querySelector("html")!;
 
 /**
  * Credentials to sign in to the knowledge graph service:
@@ -151,6 +152,51 @@ filterPredicateSegmentedControl.addEventListener(
 );
 
 optionsPanel.appendChild(filterPredicateSegmentedControl);
+
+const languageSegmentedControl = document.createElement(
+  "calcite-segmented-control",
+);
+
+const englishSegmentedControlItem = document.createElement(
+  "calcite-segmented-control-item",
+);
+englishSegmentedControlItem.checked = true;
+englishSegmentedControlItem.textContent = "English";
+englishSegmentedControlItem.value = "en";
+languageSegmentedControl.appendChild(englishSegmentedControlItem);
+
+const spanishSegmentedControlItem = document.createElement(
+  "calcite-segmented-control-item",
+);
+spanishSegmentedControlItem.textContent = "Spanish";
+spanishSegmentedControlItem.value = "es";
+languageSegmentedControl.appendChild(spanishSegmentedControlItem);
+
+const arabicSegmentedControlItem = document.createElement(
+  "calcite-segmented-control-item",
+);
+arabicSegmentedControlItem.textContent = "Arabic";
+arabicSegmentedControlItem.value = "ar";
+languageSegmentedControl.appendChild(arabicSegmentedControlItem);
+
+languageSegmentedControl.addEventListener(
+  "calciteSegmentedControlChange",
+  () => {
+    const selectedLanguage = languageSegmentedControl.value;
+    if (selectedLanguage === "en") {
+      html.lang = "en";
+      html.dir = "ltr";
+    } else if (selectedLanguage === "es") {
+      html.lang = "es";
+      html.dir = "ltr";
+    } else if (selectedLanguage === "ar") {
+      html.lang = "ar";
+      html.dir = "rtl";
+    }
+  },
+);
+
+optionsPanel.appendChild(languageSegmentedControl);
 
 viewElement.appendChild(optionsPanel);
 
