@@ -27,15 +27,16 @@ import "./style.css";
 
 type FilterMode = "all" | "extent" | "visible";
 
-let isUsingLayerListNew = true;
-let activeLayerListElement = createLayerListElement(isUsingLayerListNew);
-
-let highlightHandle: ResourceHandle;
+const app = document.querySelector("#app")!;
+const defaultWebMapItemId = "512944c00f8a4219a4bb70691089c9e9";
+const html = document.querySelector("html")!;
+const itemIdQueryParameter = "itemId";
 const filterModeHandles: ResourceHandle[] = [];
 const layerListHandles: ResourceHandle[] = [];
 
-const app = document.querySelector("#app")!;
-const html = document.querySelector("html")!;
+let isUsingLayerListNew = true;
+let activeLayerListElement = createLayerListElement(isUsingLayerListNew);
+let highlightHandle: ResourceHandle;
 
 /**
  * Credentials to sign in to the knowledge graph service:
@@ -50,7 +51,8 @@ const knowledgeGraphLayer = new KnowledgeGraphLayer({
 });
 
 const viewElement = document.createElement("arcgis-map");
-viewElement.itemId = "512944c00f8a4219a4bb70691089c9e9";
+viewElement.itemId = getItemIdFromUrl(defaultWebMapItemId);
+syncItemIdQueryParam(viewElement.itemId);
 viewElement.center = [-105, 39];
 viewElement.zoom = 7;
 app?.appendChild(viewElement);
@@ -459,6 +461,13 @@ function clearLayerListHandles() {
   layerListHandles.length = 0;
 }
 
+function getItemIdFromUrl(defaultItemId: string): string {
+  const itemIdFromQuery = new URL(window.location.href).searchParams
+    .get(itemIdQueryParameter)
+    ?.trim();
+  return itemIdFromQuery || defaultItemId;
+}
+
 function getSelectedFilterMode(): FilterMode {
   const value = filterPredicateSegmentedControl.value;
   if (value === "all" || value === "visible" || value === "extent") {
@@ -659,4 +668,10 @@ function showVisible() {
       { initial: true },
     ),
   );
+}
+
+function syncItemIdQueryParam(itemId: string): void {
+  const url = new URL(window.location.href);
+  url.searchParams.set(itemIdQueryParameter, itemId);
+  window.history.replaceState({}, "", url);
 }
