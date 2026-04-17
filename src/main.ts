@@ -330,6 +330,62 @@ function itemMatchesCurrentFilterText(item: ListItem): boolean {
   return itemTitle.includes(filterText);
 }
 
+function hasVisibleProperty(value: unknown): value is { visible: boolean } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "visible" in value &&
+    typeof (value as { visible?: unknown }).visible === "boolean"
+  );
+}
+
+type VisibilityEntry = {
+  child: object;
+  visible: boolean;
+  parent: unknown;
+};
+
+function collectVisibilityEntries(): VisibilityEntry[] {
+  const entries: VisibilityEntry[] = [];
+  const topLevelLayers = viewElement.map?.allLayers.toArray() ?? [];
+
+  for (const layer of topLevelLayers) {
+    entries.push({
+      child: layer,
+      visible: layer.visible,
+      parent: layer.parent,
+    });
+
+    const sublayers = (layer as { allSublayers?: { toArray(): unknown[] } })
+      .allSublayers;
+    for (const sublayer of sublayers?.toArray() ?? []) {
+      const visibilityChild = sublayer as {
+        visible: boolean;
+        parent: unknown;
+      };
+      entries.push({
+        child: sublayer as object,
+        visible: visibilityChild.visible,
+        parent: visibilityChild.parent,
+      });
+    }
+  }
+
+  return entries;
+}
+
+function syncAncestorVisibility(parent: unknown): void {
+  let currentParent = parent;
+
+  while (currentParent) {
+    if (hasVisibleProperty(currentParent) && !currentParent.visible) {
+      currentParent.visible = true;
+    }
+
+    currentParent = (currentParent as { parent?: unknown }).parent;
+  }
+}
+
 async function listItemCreatedFunction(event: { item: ListItem }) {
   const { item } = event;
   const { layer } = item;
@@ -604,6 +660,27 @@ async function setupLayerList(
     },
   );
   layerListHandles.push(tableSelectionWatchHandle);
+
+  const previousChildVisibility = new WeakMap<object, boolean>();
+
+  const childVisibilityWatchHandle = reactiveUtils.watch(
+    () => collectVisibilityEntries(),
+    (entries: VisibilityEntry[]) => {
+      for (const entry of entries) {
+        const wasVisible = previousChildVisibility.get(entry.child) ?? false;
+        const becameVisible = !wasVisible && entry.visible;
+        previousChildVisibility.set(entry.child, entry.visible);
+
+        if (!becameVisible) {
+          continue;
+        }
+
+        syncAncestorVisibility(entry.parent);
+      }
+    },
+    { initial: true },
+  );
+  layerListHandles.push(childVisibilityWatchHandle);
 
   layerListElement.addEventListener("arcgisTriggerAction", (event: any) => {
     const { id } = event.detail.action;
