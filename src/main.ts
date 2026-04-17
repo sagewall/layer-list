@@ -1,4 +1,5 @@
 import Map from "@arcgis/core/Map";
+import config from "@arcgis/core/config.js";
 import type Collection from "@arcgis/core/core/Collection";
 import type { ResourceHandle } from "@arcgis/core/core/Handles";
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
@@ -29,8 +30,8 @@ type FilterMode = "all" | "extent" | "visible";
 
 const app = document.querySelector("#app")!;
 const defaultWebMapItemId = "512944c00f8a4219a4bb70691089c9e9";
+const defaultPortal = "maps.arcgis.com";
 const html = document.querySelector("html")!;
-const itemIdQueryParameter = "itemId";
 const filterModeHandles: ResourceHandle[] = [];
 const layerListHandles: ResourceHandle[] = [];
 
@@ -50,9 +51,16 @@ const knowledgeGraphLayer = new KnowledgeGraphLayer({
   url: "https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/BumbleBees/KnowledgeGraphServer",
 });
 
+const portal = getPortalFromUrl(defaultPortal);
+const normalizedPortal = normalizePortal(portal);
+config.portalUrl = normalizedPortal;
+syncPortalQueryParam(portal);
+
+const webMapItemId = getWebmapFromUrl(defaultWebMapItemId);
+syncWebmapQueryParam(webMapItemId);
+
 const viewElement = document.createElement("arcgis-map");
-viewElement.itemId = getItemIdFromUrl(defaultWebMapItemId);
-syncItemIdQueryParam(viewElement.itemId);
+viewElement.itemId = webMapItemId;
 viewElement.center = [-105, 39];
 viewElement.zoom = 7;
 app?.appendChild(viewElement);
@@ -206,6 +214,221 @@ try {
   await setupLayerList(activeLayerListElement);
 } finally {
   layerListTypeSwitch.disabled = false;
+}
+
+window.addEventListener("beforeunload", () => {
+  clearFilterModeHandles();
+  clearLayerListHandles();
+  highlightHandle?.remove();
+});
+
+async function addLayerFromDynamicGroup(layer: FeatureLayer) {
+  const parentCatalogLayer = getCatalogLayerForLayer(layer);
+  if (!parentCatalogLayer) {
+    return;
+  }
+  const footprint = parentCatalogLayer.createFootprintFromLayer(layer);
+  if (!footprint) {
+    return;
+  }
+  const layerFromFootprint =
+    await parentCatalogLayer.createLayerFromFootprint(footprint);
+  viewElement.map?.layers.add(layerFromFootprint);
+}
+
+function clearFilterModeHandles() {
+  for (const handle of filterModeHandles) {
+    handle.remove();
+  }
+  filterModeHandles.length = 0;
+}
+
+function clearLayerListHandles() {
+  for (const handle of layerListHandles) {
+    handle.remove();
+  }
+  layerListHandles.length = 0;
+}
+
+function createLayerListElement(useLayerListNew: boolean) {
+  const tagName = useLayerListNew
+    ? "arcgis-layer-list-new"
+    : "arcgis-layer-list";
+  const layerListElement = document.createElement(tagName) as
+    | HTMLArcgisLayerListElement
+    | HTMLArcgisLayerListNewElement;
+
+  return layerListElement;
+}
+
+function getPortalFromUrl(defaultPortal: string): string {
+  const searchParams = new URL(window.location.href).searchParams;
+  const portalFromQuery = searchParams.get("portal")?.trim();
+  return portalFromQuery || defaultPortal;
+}
+
+function getSelectedFilterMode(): FilterMode {
+  const value = filterPredicateSegmentedControl.value;
+  if (value === "all" || value === "visible" || value === "extent") {
+    return value;
+  }
+
+  console.warn(`Unexpected filter mode "${value}". Falling back to "all".`);
+  return "all";
+}
+
+function getWebmapFromUrl(defaultWebmap: string): string {
+  const searchParams = new URL(window.location.href).searchParams;
+  const webmapFromQuery = searchParams.get("webmap")?.trim();
+  return webmapFromQuery || defaultWebmap;
+}
+
+async function handleLayerSelection(layer: Layer) {
+  console.log(layer.title, layer.type, layer.persistenceEnabled);
+
+  if (layer instanceof FeatureLayer) {
+    console.log("Layer title:", layer.title);
+  }
+
+  if (isLayerFromCatalog(layer)) {
+    const parentCatalogLayer = getCatalogLayerForLayer(layer);
+    if (!parentCatalogLayer) {
+      return;
+    }
+    const footprint = parentCatalogLayer.createFootprintFromLayer(layer);
+
+    const layerView = (await viewElement.view.whenLayerView(
+      parentCatalogLayer,
+    )) as CatalogLayerView;
+    await reactiveUtils.whenOnce(() => !layerView.updating);
+
+    highlightHandle?.remove();
+    if (!footprint || !layerView.footprintLayerView) {
+      return;
+    }
+    highlightHandle = layerView.footprintLayerView.highlight(footprint);
+  }
+}
+
+function itemMatchesCurrentFilterText(item: ListItem): boolean {
+  const filterText = (
+    (
+      activeLayerListElement as
+        | HTMLArcgisLayerListElement
+        | HTMLArcgisLayerListNewElement
+    ).filterText ?? ""
+  )
+    .trim()
+    .toLowerCase();
+  if (!filterText) {
+    return true;
+  }
+
+  const itemTitle = ((item.title ?? item.layer?.title ?? "") as string)
+    .trim()
+    .toLowerCase();
+  return itemTitle.includes(filterText);
+}
+
+async function listItemCreatedFunction(event: { item: ListItem }) {
+  const { item } = event;
+  const { layer } = item;
+
+  if (layer) {
+    try {
+      await layer.load();
+    } catch {
+      console.log(`load failed for ${layer.title}`);
+    }
+
+    item.actionsSections = [[]];
+
+    if (
+      layer.type !== "group" &&
+      layer.type !== "knowledge-graph" &&
+      layer.type !== "catalog" &&
+      layer.type !== "catalog-dynamic-group"
+    ) {
+      item.panel = {
+        content: "legend",
+      };
+    }
+
+    if (layer.type !== "catalog-dynamic-group") {
+      item.actionsSections.getItemAt(0)?.push(
+        new ActionButton({
+          title: "Zoom to",
+          icon: "zoom-to-object",
+          id: "zoom-to",
+        }),
+      );
+    }
+
+    if (
+      !isLayerFromCatalog(layer as Layer) &&
+      layer.type !== "catalog-dynamic-group" &&
+      layer.type !== "catalog-footprint" &&
+      layer.type !== "knowledge-graph-sublayer" &&
+      layer.type !== "sublayer" &&
+      layer.type !== "subtype-group" &&
+      layer.type !== "subtype-sublayer"
+    ) {
+      item.actionsSections.getItemAt(0)?.push(
+        new ActionButton({
+          title: "Create group layer",
+          icon: "folder-new",
+          id: "add-group-layer",
+        }),
+      );
+    }
+
+    if (
+      isLayerFromCatalog(layer as Layer) &&
+      getCatalogLayerForLayer(layer as Layer)
+    ) {
+      item.actionsSections.getItemAt(0)?.push(
+        new ActionButton({
+          title: "Add layer to map",
+          icon: "add-layer",
+          id: "add-layer",
+        }),
+      );
+    }
+  }
+}
+
+function normalizePortal(portal: string): string {
+  if (!portal) {
+    return "https://maps.arcgis.com";
+  }
+
+  return /^https?:\/\//i.test(portal) ? portal : `https://${portal}`;
+}
+
+async function replaceLayerList(useLayerListNew: boolean) {
+  clearFilterModeHandles();
+  clearLayerListHandles();
+  highlightHandle?.remove();
+
+  const previousLayerList = activeLayerListElement;
+  activeLayerListElement = createLayerListElement(useLayerListNew);
+
+  previousLayerList.remove();
+  viewElement.appendChild(activeLayerListElement);
+  await setupLayerList(activeLayerListElement);
+}
+
+function setFilterPredicate(mode: FilterMode) {
+  switch (mode) {
+    case "extent":
+      showAtCurrentViewExtent();
+      return;
+    case "visible":
+      showVisible();
+      return;
+    default:
+      showAll();
+  }
 }
 
 async function setupLayerList(
@@ -416,208 +639,6 @@ async function setupLayerList(
   });
 }
 
-window.addEventListener("beforeunload", () => {
-  clearFilterModeHandles();
-  clearLayerListHandles();
-  highlightHandle?.remove();
-});
-
-async function addLayerFromDynamicGroup(layer: FeatureLayer) {
-  const parentCatalogLayer = getCatalogLayerForLayer(layer);
-  if (!parentCatalogLayer) {
-    return;
-  }
-  const footprint = parentCatalogLayer.createFootprintFromLayer(layer);
-  if (!footprint) {
-    return;
-  }
-  const layerFromFootprint =
-    await parentCatalogLayer.createLayerFromFootprint(footprint);
-  viewElement.map?.layers.add(layerFromFootprint);
-}
-
-function clearFilterModeHandles() {
-  for (const handle of filterModeHandles) {
-    handle.remove();
-  }
-  filterModeHandles.length = 0;
-}
-
-function createLayerListElement(useLayerListNew: boolean) {
-  const tagName = useLayerListNew
-    ? "arcgis-layer-list-new"
-    : "arcgis-layer-list";
-  const layerListElement = document.createElement(tagName) as
-    | HTMLArcgisLayerListElement
-    | HTMLArcgisLayerListNewElement;
-
-  return layerListElement;
-}
-
-function clearLayerListHandles() {
-  for (const handle of layerListHandles) {
-    handle.remove();
-  }
-  layerListHandles.length = 0;
-}
-
-function getItemIdFromUrl(defaultItemId: string): string {
-  const itemIdFromQuery = new URL(window.location.href).searchParams
-    .get(itemIdQueryParameter)
-    ?.trim();
-  return itemIdFromQuery || defaultItemId;
-}
-
-function getSelectedFilterMode(): FilterMode {
-  const value = filterPredicateSegmentedControl.value;
-  if (value === "all" || value === "visible" || value === "extent") {
-    return value;
-  }
-
-  console.warn(`Unexpected filter mode "${value}". Falling back to "all".`);
-  return "all";
-}
-
-async function handleLayerSelection(layer: Layer) {
-  console.log(layer.title, layer.type, layer.persistenceEnabled);
-
-  if (layer instanceof FeatureLayer) {
-    console.log("Layer title:", layer.title);
-  }
-
-  if (isLayerFromCatalog(layer)) {
-    const parentCatalogLayer = getCatalogLayerForLayer(layer);
-    if (!parentCatalogLayer) {
-      return;
-    }
-    const footprint = parentCatalogLayer.createFootprintFromLayer(layer);
-
-    const layerView = (await viewElement.view.whenLayerView(
-      parentCatalogLayer,
-    )) as CatalogLayerView;
-    await reactiveUtils.whenOnce(() => !layerView.updating);
-
-    highlightHandle?.remove();
-    if (!footprint || !layerView.footprintLayerView) {
-      return;
-    }
-    highlightHandle = layerView.footprintLayerView.highlight(footprint);
-  }
-}
-
-function itemMatchesCurrentFilterText(item: ListItem): boolean {
-  const filterText = (
-    (
-      activeLayerListElement as
-        | HTMLArcgisLayerListElement
-        | HTMLArcgisLayerListNewElement
-    ).filterText ?? ""
-  )
-    .trim()
-    .toLowerCase();
-  if (!filterText) {
-    return true;
-  }
-
-  const itemTitle = ((item.title ?? item.layer?.title ?? "") as string)
-    .trim()
-    .toLowerCase();
-  return itemTitle.includes(filterText);
-}
-
-async function listItemCreatedFunction(event: { item: ListItem }) {
-  const { item } = event;
-  const { layer } = item;
-
-  if (layer) {
-    try {
-      await layer.load();
-    } catch {
-      console.log(`load failed for ${layer.title}`);
-    }
-
-    item.actionsSections = [[]];
-
-    if (
-      layer.type !== "group" &&
-      layer.type !== "knowledge-graph" &&
-      layer.type !== "catalog" &&
-      layer.type !== "catalog-dynamic-group"
-    ) {
-      item.panel = {
-        content: "legend",
-      };
-    }
-
-    if (layer.type !== "catalog-dynamic-group") {
-      item.actionsSections.getItemAt(0)?.push(
-        new ActionButton({
-          title: "Zoom to",
-          icon: "zoom-to-object",
-          id: "zoom-to",
-        }),
-      );
-    }
-
-    if (
-      !isLayerFromCatalog(layer as Layer) &&
-      layer.type !== "catalog-dynamic-group" &&
-      layer.type !== "catalog-footprint" &&
-      layer.type !== "knowledge-graph-sublayer" &&
-      layer.type !== "sublayer" &&
-      layer.type !== "subtype-group" &&
-      layer.type !== "subtype-sublayer"
-    ) {
-      item.actionsSections.getItemAt(0)?.push(
-        new ActionButton({
-          title: "Create group layer",
-          icon: "folder-new",
-          id: "add-group-layer",
-        }),
-      );
-    }
-
-    if (
-      isLayerFromCatalog(layer as Layer) &&
-      getCatalogLayerForLayer(layer as Layer)
-    ) {
-      item.actionsSections.getItemAt(0)?.push(
-        new ActionButton({
-          title: "Add layer to map",
-          icon: "add-layer",
-          id: "add-layer",
-        }),
-      );
-    }
-  }
-}
-
-async function replaceLayerList(useLayerListNew: boolean) {
-  clearFilterModeHandles();
-  clearLayerListHandles();
-  highlightHandle?.remove();
-
-  const previousLayerList = activeLayerListElement;
-  activeLayerListElement = createLayerListElement(useLayerListNew);
-
-  previousLayerList.remove();
-  viewElement.appendChild(activeLayerListElement);
-  await setupLayerList(activeLayerListElement);
-}
-
-function setFilterPredicate(mode: FilterMode) {
-  switch (mode) {
-    case "extent":
-      showAtCurrentViewExtent();
-      return;
-    case "visible":
-      showVisible();
-      return;
-    default:
-      showAll();
-  }
-}
-
 function showAll() {
   clearFilterModeHandles();
   activeLayerListElement.filterPredicate = undefined;
@@ -670,8 +691,14 @@ function showVisible() {
   );
 }
 
-function syncItemIdQueryParam(itemId: string): void {
+function syncPortalQueryParam(portal: string): void {
   const url = new URL(window.location.href);
-  url.searchParams.set(itemIdQueryParameter, itemId);
+  url.searchParams.set("portal", portal);
+  window.history.replaceState({}, "", url);
+}
+
+function syncWebmapQueryParam(webmap: string): void {
+  const url = new URL(window.location.href);
+  url.searchParams.set("webmap", webmap);
   window.history.replaceState({}, "", url);
 }
