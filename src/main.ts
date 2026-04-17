@@ -466,6 +466,7 @@ async function setupLayerList(
   layerListElement.selectionMode = "single";
   layerListElement.showCloseButton = true;
   layerListElement.showCollapseButton = true;
+  layerListElement.showErrors = true;
   layerListElement.showFilter = true;
   layerListElement.showHeading = true;
   layerListElement.slot = "top-right";
