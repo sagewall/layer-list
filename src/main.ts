@@ -1,19 +1,19 @@
-import Map from "@arcgis/core/Map";
+import Map from "@arcgis/core/Map.js";
 import config from "@arcgis/core/config.js";
-import type Collection from "@arcgis/core/core/Collection";
-import type { ResourceHandle } from "@arcgis/core/core/Handles";
-import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
-import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
-import GroupLayer from "@arcgis/core/layers/GroupLayer";
-import KnowledgeGraphLayer from "@arcgis/core/layers/KnowledgeGraphLayer";
-import type Layer from "@arcgis/core/layers/Layer";
+import type Collection from "@arcgis/core/core/Collection.js";
+import type { ResourceHandle } from "@arcgis/core/core/Handles.js";
+import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
+import FeatureLayer from "@arcgis/core/layers/FeatureLayer.js";
+import GroupLayer from "@arcgis/core/layers/GroupLayer.js";
+import KnowledgeGraphLayer from "@arcgis/core/layers/KnowledgeGraphLayer.js";
+import type Layer from "@arcgis/core/layers/Layer.js";
 import {
   getCatalogLayerForLayer,
   isLayerFromCatalog,
-} from "@arcgis/core/layers/catalog/catalogUtils";
-import ActionButton from "@arcgis/core/support/actions/ActionButton";
-import CatalogLayerView from "@arcgis/core/views/layers/CatalogLayerView";
-import type ListItem from "@arcgis/core/widgets/LayerList/ListItem";
+} from "@arcgis/core/layers/catalog/catalogUtils.js";
+import ActionButton from "@arcgis/core/support/actions/ActionButton.js";
+import CatalogLayerView from "@arcgis/core/views/layers/CatalogLayerView.js";
+import type ListItem from "@arcgis/core/widgets/LayerList/ListItem.js";
 import "@arcgis/map-components/components/arcgis-layer-list";
 import "@arcgis/map-components/components/arcgis-layer-list-new";
 import "@arcgis/map-components/components/arcgis-map";
@@ -49,6 +49,10 @@ let highlightHandle: ResourceHandle;
  */
 const knowledgeGraphLayer = new KnowledgeGraphLayer({
   url: "https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/BumbleBees/KnowledgeGraphServer",
+  // url: "https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/BumbleBeeEdits/KnowledgeGraphServer",
+  // url: "https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/HealthcareNetwork/KnowledgeGraphServer"
+  // url: "https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/KGS_PowerPlants/KnowledgeGraphServer",
+  // url: "https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/PhoneCalls/KnowledgeGraphServer"
 });
 
 const portal = getPortalFromUrl(defaultPortal);
