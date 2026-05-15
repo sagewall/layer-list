@@ -288,10 +288,14 @@ function getWebmapFromUrl(defaultWebmap: string): string {
 }
 
 async function handleLayerSelection(layer: Layer) {
-  console.log(layer.title, layer.type, layer.persistenceEnabled);
+  console.log("layer.title:", layer.title);
+  console.log("layer.type:", layer.type);
+  console.log("layer.persistenceEnabled:", layer.persistenceEnabled);
+  console.log("isLayerFromCatalog:", isLayerFromCatalog(layer));
+  console.log("layer.loaded:", layer.loaded);
 
-  if (layer instanceof FeatureLayer) {
-    console.log("Layer title:", layer.title);
+  if ("loadStatus" in layer) {
+    console.log("layer.loadStatus:", layer.loadStatus);
   }
 
   if (isLayerFromCatalog(layer)) {
