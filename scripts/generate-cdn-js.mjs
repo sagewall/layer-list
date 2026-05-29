@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
 const inputPath = path.join(repoRoot, "src", "main.ts");
-const outputPath = path.join(repoRoot, "cdn.js");
+const outputPath = path.join(repoRoot, "cdn", "cdn.js");
 
 const source = await fs.readFile(inputPath, "utf8");
 const sourceFile = ts.createSourceFile(
