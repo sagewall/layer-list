@@ -39,20 +39,12 @@ let isUsingLayerListNext = true;
 let activeLayerListElement = createLayerListElement(isUsingLayerListNext);
 let highlightHandle: ResourceHandle;
 
-/**
- * Credentials to sign in to the knowledge graph service:
- * https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/BumbleBees/KnowledgeGraphServer
- * https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/PhoneCalls/KnowledgeGraphServer
- *
- * username: viewer01
- * password: I68VGU^nMurF
- */
 const knowledgeGraphLayer = new KnowledgeGraphLayer({
   url: "https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/BumbleBees/KnowledgeGraphServer",
-  // url: "https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/BumbleBeeEdits/KnowledgeGraphServer",
-  // url: "https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/HealthcareNetwork/KnowledgeGraphServer"
-  // url: "https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/KGS_PowerPlants/KnowledgeGraphServer",
-  // url: "https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/PhoneCalls/KnowledgeGraphServer"
+});
+
+const catalogLayer = new CatalogLayer({
+  url: "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/Sanborn_maps_catalog/FeatureServer",
 });
 
 const portal = getPortalFromUrl(defaultPortal);
