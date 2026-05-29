@@ -3,6 +3,7 @@ import config from "@arcgis/core/config.js";
 import type Collection from "@arcgis/core/core/Collection.js";
 import type { ResourceHandle } from "@arcgis/core/core/Handles.js";
 import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
+import CatalogLayer from "@arcgis/core/layers/CatalogLayer.js";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer.js";
 import GroupLayer from "@arcgis/core/layers/GroupLayer.js";
 import KnowledgeGraphLayer from "@arcgis/core/layers/KnowledgeGraphLayer.js";
@@ -57,8 +58,6 @@ syncWebmapQueryParam(webMapItemId);
 
 const viewElement = document.createElement("arcgis-map");
 viewElement.itemId = webMapItemId;
-viewElement.center = [-105, 39];
-viewElement.zoom = 7;
 app?.appendChild(viewElement);
 
 await viewElement.viewOnReady();
@@ -114,6 +113,17 @@ layerListTypeSwitchLabel.appendChild(layerListTypeSwitch);
 layerListTypeSwitchLabel.appendChild(arcgisLayerListNextTextSpan);
 
 optionsPanel.appendChild(layerListTypeSwitchLabel);
+
+const addCatalogLayerButton = document.createElement("calcite-button");
+addCatalogLayerButton.textContent = "Add catalog layer";
+addCatalogLayerButton.addEventListener("click", () => {
+  if (viewElement.map) {
+    viewElement.map.layers.add(catalogLayer);
+    addCatalogLayerButton.disabled = true;
+  }
+});
+
+optionsPanel.appendChild(addCatalogLayerButton);
 
 const addKnowledgeGraphLayerButton = document.createElement("calcite-button");
 addKnowledgeGraphLayerButton.textContent = "Add knowledge graph layer";
