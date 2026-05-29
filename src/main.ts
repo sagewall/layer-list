@@ -29,7 +29,7 @@ import "./style.css";
 type FilterMode = "all" | "extent" | "visible";
 
 const app = document.querySelector("#app")!;
-const defaultWebMapItemId = "512944c00f8a4219a4bb70691089c9e9";
+const defaultWebMapItemId = "237b9584339446a0b56317b5962a4971";
 const defaultPortal = "maps.arcgis.com";
 const html = document.querySelector("html")!;
 const filterModeHandles: ResourceHandle[] = [];
