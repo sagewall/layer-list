@@ -18,11 +18,16 @@ const sourceFile = ts.createSourceFile(
   ts.ScriptKind.TS,
 );
 
+const SIDE_EFFECT_IMPORT_PREFIXES = [
+  "@arcgis/map-components/",
+  "@esri/calcite-components/",
+];
+
 function isSkippedSideEffectImport(specifier) {
   return (
-    specifier.startsWith("@arcgis/map-components/") ||
-    specifier.startsWith("@esri/calcite-components/") ||
-    specifier === "./style.css"
+    SIDE_EFFECT_IMPORT_PREFIXES.some((prefix) =>
+      specifier.startsWith(prefix),
+    ) || specifier === "./style.css"
   );
 }
 
@@ -119,24 +124,13 @@ const transpiled = ts.transpileModule(source, {
   },
 }).outputText;
 
-const jsFile = ts.createSourceFile(
-  "main.js",
-  transpiled,
-  ts.ScriptTarget.Latest,
-  true,
-  ts.ScriptKind.JS,
-);
-
-const spansToRemove = jsFile.statements
-  .filter((statement) => ts.isImportDeclaration(statement))
-  .map((statement) => [statement.getStart(jsFile), statement.getEnd()])
-  .sort((a, b) => b[0] - a[0]);
-
-let jsBody = transpiled;
-for (const [start, end] of spansToRemove) {
-  jsBody = jsBody.slice(0, start) + jsBody.slice(end);
-}
-
+// Remove all static imports from transpiled output. ArcGIS core imports are rebuilt
+// above using $arcgis.import and CDN side-effect imports are intentionally excluded.
+const STATIC_IMPORT_RE = /^\s*import\s[\s\S]*?from\s+["'][^"']+["'];?\s*$/gm;
+const SIDE_EFFECT_IMPORT_RE = /^\s*import\s+["'][^"']+["'];?\s*$/gm;
+let jsBody = transpiled
+  .replace(STATIC_IMPORT_RE, "")
+  .replace(SIDE_EFFECT_IMPORT_RE, "");
 jsBody = jsBody.replace(/^\s*export\s*\{\s*\};?\s*$/gm, "").trimStart();
 
 const output = `${importLines.join("\n")}\n\n// Web components and styles are expected to be loaded via CDN in the host HTML.\n\n${jsBody}`;
