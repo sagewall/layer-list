@@ -15,7 +15,7 @@ import ActionButton from "@arcgis/core/support/actions/ActionButton.js";
 import CatalogLayerView from "@arcgis/core/views/layers/CatalogLayerView.js";
 import type ListItem from "@arcgis/core/widgets/LayerList/ListItem.js";
 import "@arcgis/map-components/components/arcgis-layer-list";
-import "@arcgis/map-components/components/arcgis-layer-list-new";
+import "@arcgis/map-components/components/arcgis-layer-list-next";
 import "@arcgis/map-components/components/arcgis-map";
 import "@esri/calcite-components/components/calcite-button";
 import "@esri/calcite-components/components/calcite-label";
@@ -35,8 +35,8 @@ const html = document.querySelector("html")!;
 const filterModeHandles: ResourceHandle[] = [];
 const layerListHandles: ResourceHandle[] = [];
 
-let isUsingLayerListNew = true;
-let activeLayerListElement = createLayerListElement(isUsingLayerListNew);
+let isUsingLayerListNext = true;
+let activeLayerListElement = createLayerListElement(isUsingLayerListNext);
 let highlightHandle: ResourceHandle;
 
 /**
@@ -106,20 +106,20 @@ layerListTypeSwitch.checked = true;
 layerListTypeSwitch.addEventListener("calciteSwitchChange", async (event) => {
   const { target } = event;
   target.disabled = true;
-  isUsingLayerListNew = target.checked;
+  isUsingLayerListNext = target.checked;
   try {
-    await replaceLayerList(isUsingLayerListNew);
+    await replaceLayerList(isUsingLayerListNext);
   } finally {
     target.disabled = false;
   }
 });
 
-const arcgisLayerListNewTextSpan = document.createElement("span");
-arcgisLayerListNewTextSpan.textContent = "arcgis-layer-list-new";
+const arcgisLayerListNextTextSpan = document.createElement("span");
+arcgisLayerListNextTextSpan.textContent = "arcgis-layer-list-next";
 
 layerListTypeSwitchLabel.appendChild(arcgisLayerListTextSpan);
 layerListTypeSwitchLabel.appendChild(layerListTypeSwitch);
-layerListTypeSwitchLabel.appendChild(arcgisLayerListNewTextSpan);
+layerListTypeSwitchLabel.appendChild(arcgisLayerListNextTextSpan);
 
 optionsPanel.appendChild(layerListTypeSwitchLabel);
 
@@ -254,13 +254,13 @@ function clearLayerListHandles() {
   layerListHandles.length = 0;
 }
 
-function createLayerListElement(useLayerListNew: boolean) {
-  const tagName = useLayerListNew
-    ? "arcgis-layer-list-new"
+function createLayerListElement(useLayerListNext: boolean) {
+  const tagName = useLayerListNext
+    ? "arcgis-layer-list-next"
     : "arcgis-layer-list";
   const layerListElement = document.createElement(tagName) as
     | HTMLArcgisLayerListElement
-    | HTMLArcgisLayerListNewElement;
+    | HTMLArcgisLayerListNextElement;
 
   return layerListElement;
 }
@@ -323,7 +323,7 @@ function itemMatchesCurrentFilterText(item: ListItem): boolean {
     (
       activeLayerListElement as
         | HTMLArcgisLayerListElement
-        | HTMLArcgisLayerListNewElement
+        | HTMLArcgisLayerListNextElement
     ).filterText ?? ""
   )
     .trim()
@@ -413,13 +413,13 @@ function normalizePortal(portal: string): string {
   return /^https?:\/\//i.test(portal) ? portal : `https://${portal}`;
 }
 
-async function replaceLayerList(useLayerListNew: boolean) {
+async function replaceLayerList(useLayerListNext: boolean) {
   clearFilterModeHandles();
   clearLayerListHandles();
   highlightHandle?.remove();
 
   const previousLayerList = activeLayerListElement;
-  activeLayerListElement = createLayerListElement(useLayerListNew);
+  activeLayerListElement = createLayerListElement(useLayerListNext);
 
   previousLayerList.remove();
   viewElement.appendChild(activeLayerListElement);
@@ -440,7 +440,7 @@ function setFilterPredicate(mode: FilterMode) {
 }
 
 async function setupLayerList(
-  layerListElement: HTMLArcgisLayerListElement | HTMLArcgisLayerListNewElement,
+  layerListElement: HTMLArcgisLayerListElement | HTMLArcgisLayerListNextElement,
 ) {
   await layerListElement.componentOnReady();
 
@@ -484,7 +484,7 @@ async function setupLayerList(
 
   setFilterPredicate(getSelectedFilterMode());
 
-  if (!isUsingLayerListNew) {
+  if (!isUsingLayerListNext) {
     const catalogLayerListActionHandle = reactiveUtils.on(
       () => layerListElement.catalogLayerList,
       "trigger-action",
@@ -510,7 +510,7 @@ async function setupLayerList(
     layerListHandles.push(catalogLayerListActionHandle);
   }
 
-  if (isUsingLayerListNew) {
+  if (isUsingLayerListNext) {
     const catalogLayerListActionHandle = reactiveUtils.on(
       () => layerListElement.catalogLayerList,
       "arcgisTriggerAction",
@@ -578,7 +578,7 @@ async function setupLayerList(
   );
   layerListHandles.push(selectedItemsWatchHandle);
 
-  if (!isUsingLayerListNew) {
+  if (!isUsingLayerListNext) {
     const tableListActionHandle = reactiveUtils.on(
       () => layerListElement.tableList,
       "trigger-action",
@@ -591,7 +591,7 @@ async function setupLayerList(
     layerListHandles.push(tableListActionHandle);
   }
 
-  if (isUsingLayerListNew) {
+  if (isUsingLayerListNext) {
     const tableListActionHandle = reactiveUtils.on(
       () => layerListElement.tableList,
       "arcgisTriggerAction",
