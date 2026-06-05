@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "generate:cdn": "node scripts/generate-cdn-js.mjs",
-    "build": "npm run generate:cdn && tsc && vite build && cp cdn/cdn.html dist/ && cp cdn/cdn.js dist/ && cp src/style.css dist/cdn.css",
+    "build": "tsc && vite build",
     "preview": "vite preview"
   },
   "devDependencies": {
