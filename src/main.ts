@@ -479,6 +479,7 @@ async function setupLayerList(
   layerListElement.showErrors = true;
   layerListElement.showFilter = true;
   layerListElement.showHeading = true;
+  layerListElement.showTemporaryLayerIndicators = true;
   layerListElement.slot = "top-right";
   layerListElement.visibilityAppearance = visibilityAppearanceSwitch.checked
     ? "checkbox"
