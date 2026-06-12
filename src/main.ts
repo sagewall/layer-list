@@ -296,6 +296,9 @@ async function handleLayerSelection(layer: Layer) {
   console.log("isLayerFromCatalog:", isLayerFromCatalog(layer));
   console.log("layer.loaded:", layer.loaded);
 
+  const layerView = await viewElement.whenLayerView(layer);
+  console.log("layerView.updating", layerView.updating);
+
   if ("loadStatus" in layer) {
     console.log("layer.loadStatus:", layer.loadStatus);
   }
