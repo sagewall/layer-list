@@ -1,21 +1,22 @@
-import Map from "@arcgis/core/Map";
+import Map from "@arcgis/core/Map.js";
 import config from "@arcgis/core/config.js";
-import type Collection from "@arcgis/core/core/Collection";
-import type { ResourceHandle } from "@arcgis/core/core/Handles";
-import * as reactiveUtils from "@arcgis/core/core/reactiveUtils";
-import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
-import GroupLayer from "@arcgis/core/layers/GroupLayer";
-import KnowledgeGraphLayer from "@arcgis/core/layers/KnowledgeGraphLayer";
-import type Layer from "@arcgis/core/layers/Layer";
+import type Collection from "@arcgis/core/core/Collection.js";
+import type { ResourceHandle } from "@arcgis/core/core/Handles.js";
+import * as reactiveUtils from "@arcgis/core/core/reactiveUtils.js";
+import CatalogLayer from "@arcgis/core/layers/CatalogLayer.js";
+import FeatureLayer from "@arcgis/core/layers/FeatureLayer.js";
+import GroupLayer from "@arcgis/core/layers/GroupLayer.js";
+import KnowledgeGraphLayer from "@arcgis/core/layers/KnowledgeGraphLayer.js";
+import type Layer from "@arcgis/core/layers/Layer.js";
 import {
   getCatalogLayerForLayer,
   isLayerFromCatalog,
-} from "@arcgis/core/layers/catalog/catalogUtils";
-import ActionButton from "@arcgis/core/support/actions/ActionButton";
-import CatalogLayerView from "@arcgis/core/views/layers/CatalogLayerView";
-import type ListItem from "@arcgis/core/widgets/LayerList/ListItem";
+} from "@arcgis/core/layers/catalog/catalogUtils.js";
+import ActionButton from "@arcgis/core/support/actions/ActionButton.js";
+import CatalogLayerView from "@arcgis/core/views/layers/CatalogLayerView.js";
+import type ListItem from "@arcgis/core/widgets/LayerList/ListItem.js";
 import "@arcgis/map-components/components/arcgis-layer-list";
-import "@arcgis/map-components/components/arcgis-layer-list-new";
+import "@arcgis/map-components/components/arcgis-layer-list-next";
 import "@arcgis/map-components/components/arcgis-map";
 import "@esri/calcite-components/components/calcite-button";
 import "@esri/calcite-components/components/calcite-label";
@@ -35,20 +36,16 @@ const html = document.querySelector("html")!;
 const filterModeHandles: ResourceHandle[] = [];
 const layerListHandles: ResourceHandle[] = [];
 
-let isUsingLayerListNew = true;
-let activeLayerListElement = createLayerListElement(isUsingLayerListNew);
+let isUsingLayerListNext = true;
+let activeLayerListElement = createLayerListElement(isUsingLayerListNext);
 let highlightHandle: ResourceHandle;
 
-/**
- * Credentials to sign in to the knowledge graph service:
- * https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/BumbleBees/KnowledgeGraphServer
- * https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/PhoneCalls/KnowledgeGraphServer
- *
- * username: viewer01
- * password: I68VGU^nMurF
- */
 const knowledgeGraphLayer = new KnowledgeGraphLayer({
   url: "https://sampleserver7.arcgisonline.com/server/rest/services/Hosted/BumbleBees/KnowledgeGraphServer",
+});
+
+const catalogLayer = new CatalogLayer({
+  url: "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/Sanborn_maps_catalog/FeatureServer",
 });
 
 const portal = getPortalFromUrl(defaultPortal);
@@ -61,8 +58,6 @@ syncWebmapQueryParam(webMapItemId);
 
 const viewElement = document.createElement("arcgis-map");
 viewElement.itemId = webMapItemId;
-viewElement.center = [-105, 39];
-viewElement.zoom = 7;
 app?.appendChild(viewElement);
 
 await viewElement.viewOnReady();
@@ -102,22 +97,33 @@ layerListTypeSwitch.checked = true;
 layerListTypeSwitch.addEventListener("calciteSwitchChange", async (event) => {
   const { target } = event;
   target.disabled = true;
-  isUsingLayerListNew = target.checked;
+  isUsingLayerListNext = target.checked;
   try {
-    await replaceLayerList(isUsingLayerListNew);
+    await replaceLayerList(isUsingLayerListNext);
   } finally {
     target.disabled = false;
   }
 });
 
-const arcgisLayerListNewTextSpan = document.createElement("span");
-arcgisLayerListNewTextSpan.textContent = "arcgis-layer-list-new";
+const arcgisLayerListNextTextSpan = document.createElement("span");
+arcgisLayerListNextTextSpan.textContent = "arcgis-layer-list-next";
 
 layerListTypeSwitchLabel.appendChild(arcgisLayerListTextSpan);
 layerListTypeSwitchLabel.appendChild(layerListTypeSwitch);
-layerListTypeSwitchLabel.appendChild(arcgisLayerListNewTextSpan);
+layerListTypeSwitchLabel.appendChild(arcgisLayerListNextTextSpan);
 
 optionsPanel.appendChild(layerListTypeSwitchLabel);
+
+const addCatalogLayerButton = document.createElement("calcite-button");
+addCatalogLayerButton.textContent = "Add catalog layer";
+addCatalogLayerButton.addEventListener("click", () => {
+  if (viewElement.map) {
+    viewElement.map.layers.add(catalogLayer);
+    addCatalogLayerButton.disabled = true;
+  }
+});
+
+optionsPanel.appendChild(addCatalogLayerButton);
 
 const addKnowledgeGraphLayerButton = document.createElement("calcite-button");
 addKnowledgeGraphLayerButton.textContent = "Add knowledge graph layer";
@@ -250,13 +256,13 @@ function clearLayerListHandles() {
   layerListHandles.length = 0;
 }
 
-function createLayerListElement(useLayerListNew: boolean) {
-  const tagName = useLayerListNew
-    ? "arcgis-layer-list-new"
+function createLayerListElement(useLayerListNext: boolean) {
+  const tagName = useLayerListNext
+    ? "arcgis-layer-list-next"
     : "arcgis-layer-list";
   const layerListElement = document.createElement(tagName) as
     | HTMLArcgisLayerListElement
-    | HTMLArcgisLayerListNewElement;
+    | HTMLArcgisLayerListNextElement;
 
   return layerListElement;
 }
@@ -284,10 +290,17 @@ function getWebmapFromUrl(defaultWebmap: string): string {
 }
 
 async function handleLayerSelection(layer: Layer) {
-  console.log(layer.title, layer.type, layer.persistenceEnabled);
+  console.log("layer.title:", layer.title);
+  console.log("layer.type:", layer.type);
+  console.log("layer.persistenceEnabled:", layer.persistenceEnabled);
+  console.log("isLayerFromCatalog:", isLayerFromCatalog(layer));
+  console.log("layer.loaded:", layer.loaded);
 
-  if (layer instanceof FeatureLayer) {
-    console.log("Layer title:", layer.title);
+  const layerView = await viewElement.whenLayerView(layer);
+  console.log("layerView.updating", layerView.updating);
+
+  if ("loadStatus" in layer) {
+    console.log("layer.loadStatus:", layer.loadStatus);
   }
 
   if (isLayerFromCatalog(layer)) {
@@ -315,7 +328,7 @@ function itemMatchesCurrentFilterText(item: ListItem): boolean {
     (
       activeLayerListElement as
         | HTMLArcgisLayerListElement
-        | HTMLArcgisLayerListNewElement
+        | HTMLArcgisLayerListNextElement
     ).filterText ?? ""
   )
     .trim()
@@ -461,13 +474,13 @@ function normalizePortal(portal: string): string {
   return /^https?:\/\//i.test(portal) ? portal : `https://${portal}`;
 }
 
-async function replaceLayerList(useLayerListNew: boolean) {
+async function replaceLayerList(useLayerListNext: boolean) {
   clearFilterModeHandles();
   clearLayerListHandles();
   highlightHandle?.remove();
 
   const previousLayerList = activeLayerListElement;
-  activeLayerListElement = createLayerListElement(useLayerListNew);
+  activeLayerListElement = createLayerListElement(useLayerListNext);
 
   previousLayerList.remove();
   viewElement.appendChild(activeLayerListElement);
@@ -488,7 +501,7 @@ function setFilterPredicate(mode: FilterMode) {
 }
 
 async function setupLayerList(
-  layerListElement: HTMLArcgisLayerListElement | HTMLArcgisLayerListNewElement,
+  layerListElement: HTMLArcgisLayerListElement | HTMLArcgisLayerListNextElement,
 ) {
   await layerListElement.componentOnReady();
 
@@ -525,6 +538,7 @@ async function setupLayerList(
   layerListElement.showErrors = true;
   layerListElement.showFilter = true;
   layerListElement.showHeading = true;
+  layerListElement.showTemporaryLayerIndicators = true;
   layerListElement.slot = "top-right";
   layerListElement.visibilityAppearance = visibilityAppearanceSwitch.checked
     ? "checkbox"
@@ -532,7 +546,7 @@ async function setupLayerList(
 
   setFilterPredicate(getSelectedFilterMode());
 
-  if (!isUsingLayerListNew) {
+  if (!isUsingLayerListNext) {
     const catalogLayerListActionHandle = reactiveUtils.on(
       () => layerListElement.catalogLayerList,
       "trigger-action",
@@ -558,7 +572,7 @@ async function setupLayerList(
     layerListHandles.push(catalogLayerListActionHandle);
   }
 
-  if (isUsingLayerListNew) {
+  if (isUsingLayerListNext) {
     const catalogLayerListActionHandle = reactiveUtils.on(
       () => layerListElement.catalogLayerList,
       "arcgisTriggerAction",
@@ -626,7 +640,7 @@ async function setupLayerList(
   );
   layerListHandles.push(selectedItemsWatchHandle);
 
-  if (!isUsingLayerListNew) {
+  if (!isUsingLayerListNext) {
     const tableListActionHandle = reactiveUtils.on(
       () => layerListElement.tableList,
       "trigger-action",
@@ -639,7 +653,7 @@ async function setupLayerList(
     layerListHandles.push(tableListActionHandle);
   }
 
-  if (isUsingLayerListNew) {
+  if (isUsingLayerListNext) {
     const tableListActionHandle = reactiveUtils.on(
       () => layerListElement.tableList,
       "arcgisTriggerAction",

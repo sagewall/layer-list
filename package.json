@@ -10,9 +10,9 @@
   },
   "devDependencies": {
     "typescript": "~6.0.2",
-    "vite": "^8.0.8"
+    "vite": "^8.1.0"
   },
   "dependencies": {
-    "@arcgis/map-components": "^5.1.0-next.74"
+    "@arcgis/map-components": "^5.1.2"
   }
 }
